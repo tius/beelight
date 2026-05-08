@@ -1,7 +1,8 @@
+
+#include "lite/core/types.h"
 #include <Arduino.h>
 
-// put function declarations here:
-int myFunction(int, int);
+using lite::u32;
 
 void setup() {
   delay(1000);

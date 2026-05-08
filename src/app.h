@@ -14,7 +14,6 @@
 using namespace std::chrono_literals;
 
 using Timer        = lite::TimerT<1000>;
-using TimerService = lite::TimerServiceT<1000>;
 
 //==============================================================================
 class App {
@@ -26,18 +25,22 @@ public:
 	}    
 
     void loop() {
+        //  execute due timers 
         auto& ts = lite::SpinTimerService::instance();
         (void)ts.spin( lite::now_ms() );
-
-        // auto& ts = TimerService::instance();
-        // (void)ts.spin( lite::duration_ms{lite::now_ms()} );
+        
+        //  process serial input
+        if ( auto c = serial_.read(); c >= 0 ) {
+            serial_.write( char(c) );
+        }
     }
 
 //------------------------------------------------------------------------------
 private:
     using AppLogger = lite::CustomLogger<LOG_ANSI_COLOR, LOG_TIMESTAMP>;
 
-    lite::SerialOut     serial_out_{MONITOR_SPEED};
+    lite::Serial        serial_{MONITOR_SPEED};
+    lite::SerialOut     serial_out_{serial_};
     lite::StdOut        std_out_{serial_out_};
     AppLogger           logger_{serial_out_};
 

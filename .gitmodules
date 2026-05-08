@@ -3,10 +3,10 @@
 	url = https://tius@github.com/tius/esp-litekit.git
 [submodule "lib/litekit"]
 	path = lib/litekit
-	url = ..\\litekit
+	url = https://tius@github.com/tius/litekit.git
 [submodule "lib/litekit-arduino"]
 	path = lib/litekit-arduino
-	url = ..\\litekit-arduino
+	url = https://tius@github.com/tius/litekit-arduino.git
 [submodule "lib/litekit-esp8266"]
 	path = lib/litekit-esp8266
-	url = ..\\litekit-esp8266
+	url = https://tius@github.com/tius/litekit-esp8266.git

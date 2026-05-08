@@ -4,3 +4,9 @@
 [submodule "lib/litekit"]
 	path = lib/litekit
 	url = ..\\litekit
+[submodule "lib/litekit-arduino"]
+	path = lib/litekit-arduino
+	url = ..\\litekit-arduino
+[submodule "lib/litekit-esp8266"]
+	path = lib/litekit-esp8266
+	url = ..\\litekit-esp8266

@@ -27,15 +27,14 @@ public:
 private:
     using AppLogger = lite::CustomLogger<LOG_ANSI_COLOR, LOG_TIMESTAMP>;
 
-    lite::SerialOut     serial_out{MONITOR_SPEED};
-    lite::StdOut        std_out_{serial_out};
-    AppLogger           logger_{serial_out};
+    lite::SerialOut     serial_out_{MONITOR_SPEED};
+    lite::StdOut        std_out_{serial_out_};
+    AppLogger           logger_{serial_out_};
 
     App() {
-        using lite::std_out;
-
-        std_out->printf("\nSDK version: %s\n", ESP.getSdkVersion());
-        LOG_INFO("App initialized");
+        serial_out_.println("\n--- app started ---");
+        LOG_INFO(APP_BANNER_TEXT);
+        LOG_TRACE("SDK version: %s", ESP.getSdkVersion());
 
         auto ms = lite::now_ms();
         LOG_WARN("now_ms: %u ms", ms);

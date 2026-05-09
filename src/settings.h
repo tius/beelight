@@ -10,6 +10,7 @@
 //  see build_info.h for build-time version string generation
 //------------------------------------------------------------------------------
 #define APP_NAME                beelight
+#define APP_VERSION             26.05
 
 #define APP_NAME_STR            XSTR(APP_NAME)
 #define APP_VERSION_STR         XSTR(APP_VERSION)
@@ -18,5 +19,6 @@
 //==============================================================================
 //   log settings
 //------------------------------------------------------------------------------
-#define LOG_TIMESTAMP           true        // enable log timestamps
 #define LOG_ANSI_COLOR          true        // enable ansi colors
+#define LOG_TIMESTAMP           false       // enable log timestamps
+#define LOG_LEVEL_PREFIX        false       // enable log level prefix

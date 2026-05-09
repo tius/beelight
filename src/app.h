@@ -39,13 +39,13 @@ public:
 
 //------------------------------------------------------------------------------
 private:
-    using AppLogger = lite::CustomLogger<LOG_ANSI_COLOR, LOG_TIMESTAMP>;
+    using AppLogger = lite::CustomLogger<LOG_ANSI_COLOR, LOG_TIMESTAMP, LOG_LEVEL_PREFIX>;
 
     lite::Serial        serial_{MONITOR_SPEED};
-    lite::SerialOut     serial_out_{serial_};
+    lite::SerialOut     serial_out_{serial_, "\n-----\n"};
     lite::StdOut        std_out_{serial_out_};
     AppLogger           logger_{serial_out_};
-    
+
     lite::CmdShell      shell_{};
     lite::Cmd           cmd_echo_{shell_, "echo", "echo remaining line", "[text]", METHOD_THIS(on_cmd_echo)};
     lite::Console       console_{shell_, serial_out_};
@@ -53,13 +53,9 @@ private:
     // Timer               timer_{MSG_BIND(this, on_timer)};
 
     App() {
-        serial_out_.println("\n--- app started ---");
-        LOG_INFO(APP_BANNER_TEXT);
         LOG_TRACE("SDK version: %s", ESP.getSdkVersion());
 
-        auto ms = lite::now_ms();
-        LOG_WARN("now_ms: %u ms", ms);
-
+        lite::std_out->println(APP_BANNER_TEXT);
         console_.ready();
 
         // timer_.start_periodic(1s);
@@ -74,7 +70,6 @@ private:
             out.crlf();
             return;
         }
-
         out.println(args.as_str());
     }
 

@@ -45,6 +45,7 @@ private:
     lite::SerialOut     serial_out_{serial_};
     lite::StdOut        std_out_{serial_out_};
     AppLogger           logger_{serial_out_};
+    
     lite::CmdShell      shell_{};
     lite::Cmd           cmd_echo_{shell_, "echo", "echo remaining line", "[text]", METHOD_THIS(on_cmd_echo)};
     lite::Console       console_{shell_, serial_out_};

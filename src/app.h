@@ -3,6 +3,7 @@
 //  see LICENSE for terms
 
 #include "settings.h"
+#include "lite/cmd.h"
 #include "lite/console.h"
 #include "lite/serial_out.h"
 #include "lite/log.h"
@@ -44,7 +45,8 @@ private:
     lite::SerialOut     serial_out_{serial_};
     lite::StdOut        std_out_{serial_out_};
     AppLogger           logger_{serial_out_};
-    lite::Shell         shell_{};
+    lite::CmdShell      shell_{};
+    lite::Cmd           cmd_echo_{shell_, "echo", "echo remaining line", "[text]", METHOD_THIS(on_cmd_echo)};
     lite::Console       console_{shell_, serial_out_};
 
     // Timer               timer_{MSG_BIND(this, on_timer)};
@@ -65,6 +67,15 @@ private:
     // prevent copying
     App(const App&) = delete;
     App& operator=(const App&) = delete;
+
+    void on_cmd_echo(lite::Out& out, lite::Args args) {
+        if (args.is_empty()) {
+            out.crlf();
+            return;
+        }
+
+        out.println(args.as_str());
+    }
 
     // void on_timer() {
     //     LOG_INFO("timer fired");

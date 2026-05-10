@@ -1,7 +1,7 @@
 # to do - personal notes
 
 ## toolkit
-- gamma
+- globale timer-frequenz
 - morse / breathe
 - tests
 

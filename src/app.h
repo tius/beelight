@@ -3,7 +3,7 @@
 //  see LICENSE for terms
 
 #include "settings.h"
-#include "rgb-led.h"
+#include "rgb-status.h"
 
 #include "lite/cmd.h"
 #include "lite/console.h"
@@ -50,13 +50,14 @@ private:
     lite::sys::SysCmd   cmd_sys_{shell_};
 
     RgbLed              rgb_led_{};
-    lite::Cmd           cmd_led_{shell_, "led", "set rgb led state", "<state>", METHOD_THIS(on_cmd_led_)
+    RgbStatus           rgb_status_{rgb_led_};
+    lite::Cmd           cmd_led_{shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led_)
     };
 
     App() {
         lite::std_out->println(APP_BANNER_TEXT);
         console_.ready();
-        rgb_led_.set(RgbLed::CHARGE);
+        rgb_status_.set(RgbStatus::CHARGE);
     }
 
     // prevent copying
@@ -64,6 +65,7 @@ private:
     App& operator=(const App&) = delete;
 
     void on_cmd_led_(lite::Out& out, lite::Args args) {
-        rgb_led_.set( args.get_u16() );
+        (void)out;
+        rgb_status_.set( args.get_u16() );
     }
 };

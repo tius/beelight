@@ -48,8 +48,6 @@ public:
 
 //------------------------------------------------------------------------------
 private:
-	using Timer = lite::TimerT<1000>;
-
 	static constexpr auto k_tick_     = 15ms;
 	static constexpr u16 k_fade_step_ = 8;
 
@@ -112,7 +110,7 @@ private:
 	}
 
 	RgbLed& led_;
-	Timer timer_{MSG_BIND(this, on_timer_)};
+	lite::Timer timer_{MSG_BIND(this, on_timer_)};
 	State state_ = OFF;
 
 	u16 led_r_duty_ = 0;

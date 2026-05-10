@@ -25,16 +25,16 @@ public:
 		return app;
 	}    
 
-    void loop() {
-        //  execute due timers 
-        auto& ts = lite::SpinTimerService::instance();
-        (void)ts.spin( lite::now_ms() );
-        
-        //  process serial input
-        if ( auto c = serial_.read(); c >= 0 ) {
-            console_.process( char(c) ) ;
-        }
-    }
+	void loop() {
+		//  execute due timers
+		auto& ts = lite::TimerService::instance();
+		ts.spin( lite::duration_ms{lite::now_ms()} );
+
+		//  process serial input
+		if (auto c = serial_.read(); c >= 0) {
+			console_.process(char(c));
+		}
+	}
 
 //------------------------------------------------------------------------------
 private:

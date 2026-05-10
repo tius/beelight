@@ -1,8 +1,9 @@
 # to do - personal notes
 
+## app
+- rgb-status schön
+
 ## toolkit
-- globale timer-frequenz
-- morse / breathe
 - tests
 
 ## build

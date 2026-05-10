@@ -3,6 +3,8 @@
 //  see LICENSE file for terms
 
 #pragma once
+#include "lite/macros.h"
+#include XINCLUDE(boards/,BOARD,.h)
 
 //==============================================================================
 //  app identity strings

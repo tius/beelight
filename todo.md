@@ -1,7 +1,7 @@
 # to do - personal notes
 
 ## toolkit
-- pwm
+- gamma
 - morse / breathe
 - tests
 

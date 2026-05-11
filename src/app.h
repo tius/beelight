@@ -3,7 +3,7 @@
 //  see LICENSE for terms
 
 #include "settings.h"
-#include "rgb-status.h"
+#include "rgb_controller.h"
 
 #include "lite/cmd.h"
 #include "lite/console.h"
@@ -27,8 +27,7 @@ public:
 
 	void loop() {
 		//  execute due timers
-		auto& ts = lite::TimerService::instance();
-		ts.spin( lite::duration_ms{lite::now_ms()} );
+		lite::Timer::spin( lite::now() );
 
 		//  process serial input
 		if (auto c = serial_.read(); c >= 0) {
@@ -50,14 +49,14 @@ private:
     lite::sys::SysCmd   cmd_sys_{shell_};
 
     RgbLed              rgb_led_{};
-    RgbStatus           rgb_status_{rgb_led_};
+    RgbController       rgb_controller_{rgb_led_};
     lite::Cmd           cmd_led_{shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led_)
     };
 
     App() {
         lite::std_out->println(APP_BANNER_TEXT);
         console_.ready();
-        rgb_status_.set(RgbStatus::CHARGE);
+        rgb_controller_.set(RgbState::CHARGE);
     }
 
     // prevent copying
@@ -66,6 +65,6 @@ private:
 
     void on_cmd_led_(lite::Out& out, lite::Args args) {
         (void)out;
-        rgb_status_.set( args.get_u16() );
+        rgb_controller_.set( args.get_u16() );
     }
 };

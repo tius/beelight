@@ -2,8 +2,13 @@
 
 ## app
 - rgb-status schön
+- charger
+- ws2812
+- i2c
 
 ## toolkit
+- fsm-lite?
+- eventbus
 - tests
 
 ## build

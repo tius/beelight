@@ -14,9 +14,10 @@ struct RgbState {
     enum : u8 {
         OFF,
         CHARGE,
+        TEST,
         _COUNT
     };
-
+    
     u8 id = 0;
 
     constexpr RgbState() = default;
@@ -27,6 +28,7 @@ struct RgbState {
         switch (id) {
             case OFF:               return "OFF";
             case CHARGE:            return "CHARGE";
+            case TEST:              return "TEST";
             default:                return "?";
         }
     }

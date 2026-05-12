@@ -3,10 +3,10 @@
 //  see LICENSE for terms
 
 #include "settings.h"
-#include "rgb_controller.h"
+#include "rgb_show.h"
 
-#include "lite/cmd.h"
-#include "lite/console.h"
+#include "lite/cli/cmd.h"
+#include "lite/cli/console.h"
 #include "lite/serial_out.h"
 #include "lite/log.h"
 #include "lite/clock.h"
@@ -49,14 +49,14 @@ private:
     lite::sys::SysCmd   cmd_sys_{shell_};
 
     RgbLed              rgb_led_{};
-    RgbController       rgb_controller_{rgb_led_};
+    RgbShow             rgb_show_{rgb_led_};
     lite::Cmd           cmd_led_{shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led_)
     };
 
     App() {
         lite::std_out->println(APP_BANNER_TEXT);
         console_.ready();
-        rgb_controller_.set(RgbState::CHARGE);
+        rgb_show_.set(RgbState::CHARGE);
     }
 
     // prevent copying
@@ -65,6 +65,6 @@ private:
 
     void on_cmd_led_(lite::Out& out, lite::Args args) {
         (void)out;
-        rgb_controller_.set( args.get_u16() );
+        rgb_show_.set( args.get_u16() );
     }
 };

@@ -7,8 +7,9 @@
 #pragma once
 
 #include "settings.h"
-#include "lite/gamma_lut.h"
 #include "lite/pwm.h"
+#include "lite/color/gamma_lut.h"
+#include "lite/color/rgb8.h"
 
 using u8    = lite::u8;
 using u16   = lite::u16;
@@ -24,32 +25,27 @@ public:
 		set(0, 0, 0);
 	}
 
-	void set(u16 red_duty, u16 green_duty, u16 blue_duty) {
+	void set(u8 red_duty, u8 green_duty, u8 blue_duty) {
 		led_r_.set_duty(red_duty);
 		led_g_.set_duty(green_duty);
 		led_b_.set_duty(blue_duty);
 	}
 
+	void set(const lite::Rgb8& rgb) {
+		set(rgb.r, rgb.g, rgb.b);
+	}
+
 //------------------------------------------------------------------------------    
 private:
-	static constexpr u32 k_duty_levels_ = static_cast<u32>(k_duty_max) + 1u;
 	static constexpr u32 k_freq_hz_     = 1000;
 
 	template <u8 Pin>
 	class LedPwm {
 	public:
-		void set_duty(u16 duty) {
-			if (duty > k_duty_max) {
-				duty = k_duty_max;
-			}
-			const auto gamma_duty = gamma_lut_t {}.lookup(
-				static_cast<typename gamma_lut_t::input_type>(duty)
-			);
+		void set_duty(u8 duty) {
+			const auto gamma_duty = lite::GammaLut{}.u8_to_u10(duty);
 			pwm_.set_duty(static_cast<u16>(gamma_duty));
 		}
-
-	private:
-		using gamma_lut_t = lite::GammaLut<k_duty_levels_, k_duty_levels_>;
 
 		lite::pwm::Pwm<
 			Pin,

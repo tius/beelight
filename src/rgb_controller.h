@@ -12,9 +12,10 @@
 #include "lite/log.h"
 #include "lite/fsm.h"
 #include "lite/fsm_data.h"
+#include "lite/morse.h"
 
-#define LOG_TAG		rgb_ctrl
-#define LOG_LEVEL	trace
+#define LOG_TAG		    rgb_ctrl
+#define LOG_LEVEL	    trace
 
 //=============================================================================
 //  main application controller FSM
@@ -41,7 +42,7 @@ public:
     // dispatch incoming event to the active state handler
     void on_event(AppEvent event) noexcept {
         auto state = fsm_state();
-        LOG_INFO("%s: %s p1=%d", state.str(), AppEventId(event.id).str(), event.p1);
+        // LOG_INFO("%s: %s p1=%d", state.str(), AppEventId(event.id).str(), event.p1);
 
         switch (state) {
             case RgbState::OFF:         return handle_off(event);
@@ -53,12 +54,25 @@ public:
 private:
     using Id = AppEventId;
 
-    RgbLed led_;
+    class Morse final : public lite::MorseCrtp<Morse> {
+    public:
+        Morse(RgbLed& led) : led_(led) {}
+
+        void out(bool on) {
+            led_.set(on ? 127 : 0, 0, 0);
+        }
+        
+    private:
+        RgbLed& led_;    
+    };
+
+    RgbLed  led_;
+    Morse   morse_{led_};
 
     void handle_off(AppEvent event) noexcept {
         switch (event.id) {
             case Id::ENTER:
-                led_.set(0, 0, 0);
+                morse_.play("I");
                 break;
         }           
     }
@@ -66,8 +80,7 @@ private:
     void handle_charge(AppEvent event) noexcept {
         switch (event.id) {
             case Id::ENTER:
-                LOG_INFO("entering CHARGE state");
-                led_.set(127, 0, 0);
+                morse_.play("-");
                 break;
         }           
     }

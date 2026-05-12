@@ -7,6 +7,8 @@
 - i2c
 
 ## toolkit
+- crtp.h
+- morse
 - fsm-lite?
 - eventbus
 - tests

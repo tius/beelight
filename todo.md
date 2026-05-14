@@ -1,15 +1,13 @@
 # to do - personal notes
 
 ## app
-- rgb-status schön
-- charger
 - ws2812
+- irmp
 - i2c
+- charger?
 
 ## toolkit
-- crtp.h
-- morse
-- fsm-lite?
+- morse: flash?
 - eventbus
 - tests
 

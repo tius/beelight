@@ -37,7 +37,7 @@ public:
             case 'b':   color_ = lite::k_rgb_blue; break;
 
             //  breathing
-            case '~':   breath_.start(20ms); break;
+            case '~':   breath_.start(24ms); break;
         }
     }
     
@@ -74,8 +74,8 @@ public:
         if ( !lite::changed(state_, state) ) return;
         morse_.off();
         switch (state) {
-            case RgbState::OFF:     morse_.play("rI"); break;
-            case RgbState::CHARGE:  morse_.play("g~"); break;
+            case RgbState::OFF:     morse_.play("gI"); break;
+            case RgbState::CHARGE:  morse_.play("r~"); break;
             case RgbState::TEST:    morse_.play("b-"); break;
         }
 	}
@@ -84,7 +84,6 @@ public:
 private:
     RgbLed&         led_;
     RgbMorseBreath  morse_{led_};
-
     u8              state_ = 0;
 };
 

@@ -25,10 +25,10 @@ public:
 		set(0, 0, 0);
 	}
 
-	void set(u8 red_duty, u8 green_duty, u8 blue_duty) {
-		led_r_.set_duty(red_duty);
-		led_g_.set_duty(green_duty);
-		led_b_.set_duty(blue_duty);
+	void set(u8 red, u8 green, u8 blue) {
+		led_r_.set(red);
+		led_g_.set(green);
+		led_b_.set(blue);
 	}
 
 	void set(const lite::Rgb8& rgb) {
@@ -42,7 +42,7 @@ private:
 	template <u8 Pin>
 	class LedPwm {
 	public:
-		void set_duty(u8 duty) {
+		void set(u8 duty) {
 			const auto gamma_duty = lite::GammaLut{}.u8_to_u10(duty);
 			pwm_.set_duty(static_cast<u16>(gamma_duty));
 		}
@@ -50,10 +50,10 @@ private:
 		lite::pwm::Pwm<
 			Pin,
 			lite::pwm::PwmConfig{
-				.initial_duty = 0,
-				.duty_max = k_duty_max,
-				.freq_hz = k_freq_hz_,
-				.active_lo = false,
+				.initial_duty 	= 0,
+				.duty_max 		= k_duty_max,
+				.freq_hz 		= k_freq_hz_,
+				.active_lo 		= false,
 			}
 		> pwm_{};
 	};

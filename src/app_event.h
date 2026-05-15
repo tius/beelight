@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "lite/types.h"
-#include "lite/fsm.h"
+#include "lite/core/types.h"
+#include "lite/core/fsm.h"
 
 class AppEvent;
 

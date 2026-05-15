@@ -3,7 +3,7 @@
 //  see LICENSE file for terms
 
 #pragma once
-#include "lite/macros.h"
+#include "lite/core/macros.h"
 #include XINCLUDE(boards/,BOARD,.h)
 
 //==============================================================================

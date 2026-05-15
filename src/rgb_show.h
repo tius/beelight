@@ -8,8 +8,8 @@
 #include "rgb_led.h"
 #include "rgb_state.h"
 
-#include "lite/log.h"
-#include "lite/changed.h"
+#include "lite/io/log.h"
+#include "lite/core/changed.h"
 #include "lite/effects/morse.h"
 #include "lite/effects/breath.h"
 

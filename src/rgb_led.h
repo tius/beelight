@@ -7,7 +7,7 @@
 #pragma once
 
 #include "settings.h"
-#include "lite/pwm.h"
+#include "lite/sys/pwm.h"
 #include "lite/color/gamma_lut.h"
 #include "lite/color/rgb8.h"
 

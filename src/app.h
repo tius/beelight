@@ -8,10 +8,10 @@
 
 #include "lite/cli/cmd.h"
 #include "lite/cli/console.h"
-#include "lite/serial_out.h"
-#include "lite/log.h"
-#include "lite/clock.h"
-#include "lite/timer.h"
+#include "lite/io/serial_out.h"
+#include "lite/io/log.h"
+#include "lite/sys/clock.h"
+#include "lite/core/timer.h"
 #include "lite/sys/sys_cmd.h"
 
 #define LOG_TAG         app

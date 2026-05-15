@@ -6,11 +6,16 @@
 
 #include "settings.h"
 #include "lite/stripe/neo.h"
+#include "lite/stripe/mapping.h"
+
+using namespace lite::stripe;
+
+using StripeBase = Mapping::NEO_COLOR_ORDER<Neo<NEO_GPIO>>;
 
 //==============================================================================
-class Stripe : public lite::stripe::Neo<NEO_GPIO, u8> {
+class Stripe : public StripeBase {
 //------------------------------------------------------------------------------    
 public:
 	Stripe() 
-		: lite::stripe::Neo<NEO_GPIO, u8>(NEO_PIXEL_CNT * 3) {}
+		: StripeBase(NEO_PIXEL_CNT) {}
 };

@@ -40,7 +40,7 @@ public:
 //------------------------------------------------------------------------------
 private:
     using AppLogger = lite::CustomLogger<LOG_ANSI_COLOR, LOG_TIMESTAMP, LOG_LEVEL_PREFIX>;
-
+    
     lite::Uart          uart_       {MONITOR_SPEED};
     lite::SerialOut     serial_out_ {uart_, "\n-----\n"};
     lite::StdOut        std_out_    {serial_out_};

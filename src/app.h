@@ -12,7 +12,7 @@
 #include "lite/io/log.h"
 #include "lite/sys/clock.h"
 #include "lite/core/timer.h"
-#include "lite/sys/sys_cmd.h"
+#include "lite/cli/sys_cmd.h"
 
 #define LOG_TAG         app
 #define LOG_LEVEL       trace

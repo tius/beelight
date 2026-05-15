@@ -29,5 +29,5 @@
 //  neo pixel settings
 //------------------------------------------------------------------------------
 #define NEO_GPIO                2           // pin number for neopixel data
-#define NEO_PIXEL_CNT           3           // number of neopixels in the strip
+#define NEO_PIXEL_CNT           18           // number of neopixels in the strip
 #define NEO_COLOR_ORDER         grb         // color order of the neopixels

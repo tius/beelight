@@ -5,12 +5,12 @@
 #pragma once
 
 #include "settings.h"
-#include "lite/stripe/neo.h"
+#include "lite/stripe/neo_pixel.h"
 #include "lite/stripe/mapping.h"
 
 using namespace lite::stripe;
 
-using StripeBase = Mapping::NEO_COLOR_ORDER<Neo<NEO_GPIO>>;
+using StripeBase = Mapping::NEO_COLOR_ORDER<NeoPixel<NEO_GPIO>>;
 
 //==============================================================================
 class Stripe : public StripeBase {

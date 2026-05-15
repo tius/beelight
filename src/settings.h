@@ -24,3 +24,9 @@
 #define LOG_ANSI_COLOR          true        // enable ansi colors
 #define LOG_TIMESTAMP           false       // enable log timestamps
 #define LOG_LEVEL_PREFIX        false       // enable log level prefix
+
+//==============================================================================
+//  neo pixel settings
+//------------------------------------------------------------------------------
+#define NEO_GPIO                2           // pin number for neopixel data
+#define NEO_PIXEL_CNT           3           // number of neopixels in the strip

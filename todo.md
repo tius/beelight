@@ -5,9 +5,10 @@
 - irmp
 - i2c
 - charger?
+- dithering
 
 ## toolkit
-- morse: flash?
+- verzeichnisse
 - eventbus
 - tests
 

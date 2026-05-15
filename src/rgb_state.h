@@ -1,4 +1,4 @@
-//  rgb fsm state definitions
+//  rgb state definitions
 //
 //  see LICENSE file for terms
 

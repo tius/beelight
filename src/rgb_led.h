@@ -43,7 +43,7 @@ private:
 	class LedPwm {
 	public:
 		void set(u8 duty) {
-			const auto gamma_duty = lite::GammaLut{}.u8_to_u10(duty);
+			const auto gamma_duty = lite::gamma_u8_to_u10(duty);
 			pwm_.set_duty(static_cast<u16>(gamma_duty));
 		}
 

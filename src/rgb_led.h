@@ -49,7 +49,7 @@ private:
 
 		lite::pwm::Pwm<
 			Pin,
-			lite::pwm::PwmConfig{
+			lite::pwm::PwmCfg{
 				.initial_duty 	= 0,
 				.duty_max 		= k_duty_max,
 				.freq_hz 		= k_freq_hz_,

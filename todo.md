@@ -1,16 +1,15 @@
 # to do - personal notes
 
 ## app
-- ws2812
 - irmp
 - i2c
 - charger?
 - dithering
 
 ## toolkit
-- verzeichnisse
-- eventbus
+- namen
 - tests
+- eventbus
 
 ## build
 - release version

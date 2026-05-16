@@ -11,7 +11,7 @@
 #include "TinyIRSender.hpp"
 
 #define LOG_TAG         irtx
-#define LOG_LEVEL       info
+#define LOG_LEVEL       IR_TX_LOG
 
 //==============================================================================
 class IrTx {

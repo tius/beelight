@@ -1,15 +1,12 @@
 # to do - personal notes
 
 ## app
-- irmp
-- i2c
 - charger?
 - dithering
 
 ## toolkit
-- namen
-- tests
 - eventbus
+- i2c
 
 ## build
 - release version

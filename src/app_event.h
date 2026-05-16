@@ -11,6 +11,7 @@ class AppEvent;
 
 using lite::u8;
 using lite::u16;
+using lite::u32;
 
 //=============================================================================
 struct AppEventId {
@@ -19,6 +20,7 @@ struct AppEventId {
         ENTER 			    = lite::fsm::event::ENTER,
         LEAVE 			    = lite::fsm::event::LEAVE,
         TIMEOUT 		    = lite::fsm::event::TIMEOUT,
+        IR_RX               = lite::fsm::event::COUNT_,   // IR receive event, p1=addr_cmd
     };
 
     u8 id = 0;
@@ -34,6 +36,7 @@ struct AppEventId {
             case ENTER:                 return "ENTER";
             case LEAVE:                 return "LEAVE";
             case TIMEOUT:               return "TIMEOUT";
+            case IR_RX:                 return "IR_RX";
             default:                    return "?";
         }
     }
@@ -42,7 +45,7 @@ struct AppEventId {
 //=============================================================================
 struct AppEvent {
     using Id        = AppEventId;
-    using Payload   = u8;
+    using Payload   = u32;
 
     Id      id = Id::NONE;
     Payload p1 = 0;    

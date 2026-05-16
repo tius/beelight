@@ -3,17 +3,20 @@
 //  see LICENSE for terms
 
 #include "settings.h"
+#include "app_event.h"
 #include "rgb_show.h"
 #include "stripe.h"
 #include "ir_rx.h"
 #include "ir_tx.h"
 #include "i2c_bus.h"
+#include "event_logger.h"
 
 #include "lite/cli/cmd.h"
 #include "lite/cli/console.h"
 #include "lite/io/serial_out.h"
 #include "lite/io/log.h"
 #include "lite/sys/clock.h"
+#include "lite/core/event_bus.h"
 #include "lite/core/timer.h"
 #include "lite/cli/sys_cmd.h"
 
@@ -44,6 +47,7 @@ public:
 //------------------------------------------------------------------------------
 private:
     using AppLogger = lite::CustomLogger<LOG_ANSI_COLOR, LOG_TIMESTAMP, LOG_LEVEL_PREFIX>;
+    using EventBus  = lite::EventBus<AppEvent>;
     
     lite::Uart          uart_       {MONITOR_SPEED};
     lite::SerialOut     serial_out_ {uart_, "\n-----\n"};
@@ -54,11 +58,14 @@ private:
     lite::Console       console_    {shell_, serial_out_};
     lite::sys::SysCmd   cmd_sys_    {shell_};
 
+    EventBus            event_bus_  {};
+    EventLogger         event_logger_{event_bus_};
+
     RgbLed              rgb_led_    {};
     RgbShow             rgb_show_   {rgb_led_};
     lite::Cmd           cmd_led_    {shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led_)};
     I2cBus              i2c_bus_    {shell_};
-    IrRx                ir_rx       {};
+    IrRx                ir_rx       {event_bus_};
     IrTx                ir_tx       {};
     Stripe              stripe_     {};
 

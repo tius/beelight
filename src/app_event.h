@@ -17,10 +17,13 @@ using lite::u32;
 struct AppEventId {
     enum : u8 {
         NONE,
-        ENTER 			    = lite::fsm::event::ENTER,
-        LEAVE 			    = lite::fsm::event::LEAVE,
-        TIMEOUT 		    = lite::fsm::event::TIMEOUT,
-        IR_RX               = lite::fsm::event::COUNT_,   // IR receive event, p1=addr_cmd
+        ENTER 			= lite::fsm::event::ENTER,
+        LEAVE 			= lite::fsm::event::LEAVE,
+        TIMEOUT 		= lite::fsm::event::TIMEOUT,
+
+        IR_RX           = lite::fsm::event::COUNT_,     
+        LIGHT_STATE,
+        LIGHT_DATA,                                          
     };
 
     u8 id = 0;
@@ -37,6 +40,8 @@ struct AppEventId {
             case LEAVE:                 return "LEAVE";
             case TIMEOUT:               return "TIMEOUT";
             case IR_RX:                 return "IR_RX";
+            case LIGHT_STATE:           return "LIGHT_STATE";
+            case LIGHT_DATA:            return "LIGHT_DATA";
             default:                    return "?";
         }
     }

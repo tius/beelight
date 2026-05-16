@@ -1,12 +1,9 @@
 # to do - personal notes
 
 ## app
-- tcs3472: sleep, wait, 
-- charger?
 - dithering
 
 ## toolkit
-- i2c
 
 ## build
 - release version
@@ -14,10 +11,6 @@
 
 ## docs
 - google docs
-
-## system test
-- sleep mode
-- rgb led
 
 ## driver low level
 - gpio
@@ -31,7 +24,6 @@
 
 ## driver high level
 - mcp73871 (resistor network)
-- rgb-led (blinking, breathing)
 - bma253
 - veml3328
 
@@ -44,7 +36,9 @@
 - charge control
 
 ## app high level
-- pairing
+- motion detection
+- ir pairing
+- radiolite control
 - low duty cycle radio use
 
 

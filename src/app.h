@@ -8,7 +8,8 @@
 #include "stripe.h"
 #include "ir_rx.h"
 #include "ir_tx.h"
-#include "i2c_bus.h"
+#include "twi_scan_cmd.h"
+#include "light_sensor.h"
 #include "event_logger.h"
 
 #include "lite/cli/cmd.h"
@@ -61,10 +62,13 @@ private:
     EventBus            event_bus_  {};
     EventLogger         event_logger_{event_bus_};
 
+    lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
+    TwiScanCmd          twi_scan_   {shell_, twi_};
+    LightSensor         light_sensor_{twi_, event_bus_};
+
     RgbLed              rgb_led_    {};
     RgbShow             rgb_show_   {rgb_led_};
     lite::Cmd           cmd_led_    {shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led_)};
-    I2cBus              i2c_bus_    {shell_};
     IrRx                ir_rx       {event_bus_};
     IrTx                ir_tx       {};
     Stripe              stripe_     {};

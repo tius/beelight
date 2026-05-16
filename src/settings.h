@@ -49,3 +49,15 @@
 //------------------------------------------------------------------------------
 #define I2C_SDA_GPIO            0           // pin number for I2C SDA
 #define I2C_SCL_GPIO            13          // pin number for I2C SCL
+#define I2C_CLOCK_HZ            400000      // I2C clock speed in hertz
+
+//==============================================================================
+//  light sensor settings
+//------------------------------------------------------------------------------
+#define LIGHT_SENSOR_LOG        info        // log level for light sensor events
+#define LIGHT_SENSOR_I2C_ADDR   0x29        // I2C address for the light sensor
+
+//==============================================================================
+//  tcs34725 driver settings
+//------------------------------------------------------------------------------
+#define TCS34725_LOG            info        // log level for tcs34725 events

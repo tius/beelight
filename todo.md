@@ -1,11 +1,11 @@
 # to do - personal notes
 
 ## app
+- tcs3472: sleep, wait, 
 - charger?
 - dithering
 
 ## toolkit
-- eventbus
 - i2c
 
 ## build

@@ -4,10 +4,13 @@
 
 #pragma once
 
-#include "settings.h"
+#include "lite/io/log.h"
 #include "lite/core/timer.h"
 #include "lite/stripe/neo_pixel.h"
 #include "lite/stripe/mapping.h"
+
+#define LOG_TAG         stripe
+#define LOG_LEVEL       info
 
 using namespace lite::stripe;
 
@@ -53,3 +56,6 @@ private:
 		}
 	}
 };
+
+#undef LOG_TAG
+#undef LOG_LEVEL

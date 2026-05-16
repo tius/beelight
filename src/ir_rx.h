@@ -5,8 +5,8 @@
 #pragma once
 #include "lite/io/log.h"
 
-#define IR_RECEIVE_PIN         IR_RX_GPIO       
-#define IR_ACTIVE_HIGH         IR_RX_ACTIVE_HIGH
+#define IR_RECEIVE_PIN              IR_RX_GPIO       
+#define NO_LED_SEND_FEEDBACK_CODE
 #include "TinyIRReceiver.hpp"
 
 #define LOG_TAG         irrx

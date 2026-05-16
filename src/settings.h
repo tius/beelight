@@ -36,4 +36,4 @@
 //  infrared receiver settings
 //------------------------------------------------------------------------------
 #define IR_RX_GPIO              4           // pin number for infrared receiver data
-#define IR_RX_ACTIVE_HIGH       true        // set true for inverted receiver output
+#define IR_TX_GPIO              5           // pin number for infrared transmitter data

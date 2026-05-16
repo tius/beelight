@@ -6,6 +6,7 @@
 #include "rgb_show.h"
 #include "stripe.h"
 #include "ir_rx.h"
+#include "ir_tx.h"
 
 #include "lite/cli/cmd.h"
 #include "lite/cli/console.h"
@@ -56,6 +57,7 @@ private:
     RgbShow             rgb_show_   {rgb_led_};
     lite::Cmd           cmd_led_    {shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led_)};
     IrRx                ir_rx       {};
+    IrTx                ir_tx       {};
     Stripe              stripe_     {};
 
     lite::Timer         timer_      { MSG_THIS(on_timer_) };

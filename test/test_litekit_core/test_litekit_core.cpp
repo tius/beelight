@@ -11,6 +11,7 @@
 #include "lite/color/rgb8.h"
 #include "lite/core/changed.h"
 #include "lite/core/compile_time.h"
+#include "lite/core/event_bus.h"
 #include "lite/core/macros.h"
 #include "lite/core/msg.h"
 #include "lite/core/spin_timer.h"
@@ -80,6 +81,38 @@ public:
 	u32 last0 = 0u;
 	u32 last1 = 0u;
 };
+
+struct EventBusTestEvent final {
+	u8 id = 0u;
+	u8 p1 = 0u;
+};
+
+class EventBusProbe final {
+public:
+	void on_event(const EventBusTestEvent& event) {
+		calls++;
+		last_id = event.id;
+		last_p1 = event.p1;
+	}
+
+	void on_event_no_args() {
+		calls++;
+	}
+
+	int calls = 0;
+	u8 last_id = 0u;
+	u8 last_p1 = 0u;
+};
+
+void event_bus_mark_one(void* ctx, const EventBusTestEvent&) {
+	auto* out = static_cast<int*>(ctx);
+	*out = 1;
+}
+
+void event_bus_mark_two(void* ctx, const EventBusTestEvent&) {
+	auto* out = static_cast<int*>(ctx);
+	*out = 2;
+}
 
 struct FakeClock final {
 	static void begin_window() {
@@ -330,6 +363,81 @@ void test_msg_clear_invalidates_message() {
 	TEST_ASSERT_FALSE(msg.is_valid());
 	TEST_ASSERT_FALSE(msg.call_if());
 	TEST_ASSERT_EQUAL_INT(0, probe.calls);
+}
+
+void test_event_bus_publish_empty_is_noop() {
+	lite::EventBus<EventBusTestEvent> bus;
+	bus.publish(EventBusTestEvent{1u, 2u});
+}
+
+void test_event_hook_callback_receives_event() {
+	lite::EventBus<EventBusTestEvent> bus;
+	EventBusProbe probe;
+	lite::EventHook<EventBusTestEvent> hook(bus);
+
+	hook.attach<&EventBusProbe::on_event>(&probe);
+
+	TEST_ASSERT_TRUE(hook.is_attached());
+
+	bus.publish(EventBusTestEvent{7u, 9u});
+	TEST_ASSERT_EQUAL_INT(1, probe.calls);
+	TEST_ASSERT_EQUAL_UINT8(7u, probe.last_id);
+	TEST_ASSERT_EQUAL_UINT8(9u, probe.last_p1);
+}
+
+void test_event_hook_supports_no_arg_member_callback() {
+	lite::EventBus<EventBusTestEvent> bus;
+	EventBusProbe probe;
+	lite::EventHook<EventBusTestEvent> hook(bus);
+
+	hook.attach<&EventBusProbe::on_event_no_args>(&probe);
+	bus.publish(EventBusTestEvent{3u, 4u});
+	TEST_ASSERT_EQUAL_INT(1, probe.calls);
+}
+
+void test_event_hook_detach_detaches_callback() {
+	lite::EventBus<EventBusTestEvent> bus;
+	EventBusProbe probe;
+	lite::EventHook<EventBusTestEvent> hook(bus);
+
+	hook.attach<&EventBusProbe::on_event>(&probe);
+	bus.publish(EventBusTestEvent{1u, 1u});
+	TEST_ASSERT_EQUAL_INT(1, probe.calls);
+
+	hook.detach();
+	TEST_ASSERT_FALSE(hook.is_attached());
+	bus.publish(EventBusTestEvent{2u, 2u});
+	TEST_ASSERT_EQUAL_INT(1, probe.calls);
+}
+
+void test_event_bus_dispatch_order_follows_registration() {
+	lite::EventBus<EventBusTestEvent> bus;
+	int first = 0;
+	int second = 0;
+	lite::EventHook<EventBusTestEvent> hook_first(bus);
+	lite::EventHook<EventBusTestEvent> hook_second(bus);
+
+	hook_first.attach(&event_bus_mark_one, &first);
+	hook_second.attach(&event_bus_mark_two, &second);
+
+	bus.publish(EventBusTestEvent{1u, 0u});
+	TEST_ASSERT_EQUAL_INT(1, first);
+	TEST_ASSERT_EQUAL_INT(2, second);
+}
+
+void test_event_hook_auto_detach_on_dtor() {
+	lite::EventBus<EventBusTestEvent> bus;
+	EventBusProbe probe;
+
+	{
+		lite::EventHook<EventBusTestEvent> hook(bus);
+		hook.attach<&EventBusProbe::on_event>(&probe);
+		bus.publish(EventBusTestEvent{1u, 1u});
+		TEST_ASSERT_EQUAL_INT(1, probe.calls);
+	}
+
+	bus.publish(EventBusTestEvent{2u, 2u});
+	TEST_ASSERT_EQUAL_INT(1, probe.calls);
 }
 
 void test_spin_timer_one_shot_fires_once() {
@@ -643,6 +751,12 @@ void run_all_tests() {
 	RUN_TEST(test_msg_bind_one_arg_member);
 	RUN_TEST(test_msg_bind_two_arg_member);
 	RUN_TEST(test_msg_clear_invalidates_message);
+	RUN_TEST(test_event_bus_publish_empty_is_noop);
+	RUN_TEST(test_event_hook_callback_receives_event);
+	RUN_TEST(test_event_hook_supports_no_arg_member_callback);
+	RUN_TEST(test_event_hook_detach_detaches_callback);
+	RUN_TEST(test_event_bus_dispatch_order_follows_registration);
+	RUN_TEST(test_event_hook_auto_detach_on_dtor);
 
 	RUN_TEST(test_spin_timer_one_shot_fires_once);
 	RUN_TEST(test_spin_timer_start_if_not_running_does_not_replace_active_run);

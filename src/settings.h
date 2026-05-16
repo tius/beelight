@@ -31,3 +31,9 @@
 #define NEO_GPIO                2           // pin number for neopixel data
 #define NEO_PIXEL_CNT           18           // number of neopixels in the strip
 #define NEO_COLOR_ORDER         grb         // color order of the neopixels
+
+//==============================================================================
+//  infrared receiver settings
+//------------------------------------------------------------------------------
+#define IR_RX_GPIO              4           // pin number for infrared receiver data
+#define IR_RX_ACTIVE_HIGH       true        // set true for inverted receiver output

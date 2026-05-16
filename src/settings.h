@@ -35,7 +35,13 @@
 //==============================================================================
 //  infrared receiver settings
 //------------------------------------------------------------------------------
+#define IR_RX_LOG               none        // log level for ir receiver events
 #define IR_RX_GPIO              4           // pin number for infrared receiver data
+
+//==============================================================================
+//  infrared transmitter settings
+//------------------------------------------------------------------------------
+#define IR_TX_LOG               none        // log level for ir transmitter events
 #define IR_TX_GPIO              5           // pin number for infrared transmitter data
 
 //==============================================================================

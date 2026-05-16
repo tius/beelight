@@ -37,3 +37,9 @@
 //------------------------------------------------------------------------------
 #define IR_RX_GPIO              4           // pin number for infrared receiver data
 #define IR_TX_GPIO              5           // pin number for infrared transmitter data
+
+//==============================================================================
+//  I2C settings
+//------------------------------------------------------------------------------
+#define I2C_SDA_GPIO            0           // pin number for I2C SDA
+#define I2C_SCL_GPIO            13          // pin number for I2C SCL

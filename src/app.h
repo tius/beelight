@@ -7,6 +7,7 @@
 #include "stripe.h"
 #include "ir_rx.h"
 #include "ir_tx.h"
+#include "i2c_bus.h"
 
 #include "lite/cli/cmd.h"
 #include "lite/cli/console.h"
@@ -56,6 +57,7 @@ private:
     RgbLed              rgb_led_    {};
     RgbShow             rgb_show_   {rgb_led_};
     lite::Cmd           cmd_led_    {shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led_)};
+    I2cBus              i2c_bus_    {shell_};
     IrRx                ir_rx       {};
     IrTx                ir_tx       {};
     Stripe              stripe_     {};

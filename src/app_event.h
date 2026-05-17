@@ -17,36 +17,23 @@ using lite::u32;
 #pragma pack(push, 1)
 
 //=============================================================================
-struct AppEventId {
+struct AppEventId : public lite::fsm::EventId {
     enum : u8 {
-        NONE,
-        ENTER 			= lite::fsm::event::ENTER,
-        LEAVE 			= lite::fsm::event::LEAVE,
-        TIMEOUT 		= lite::fsm::event::TIMEOUT,
-
-        IR_RX           = lite::fsm::event::COUNT_,     
+        IR_RX           = lite::fsm::EventId::COUNT_,     
         LIGHT_STATE,
         LIGHT_LUM,
         LIGHT_RGB,                                          
     };
 
-    u8 id = 0;
-
-    constexpr AppEventId() = default;
-    constexpr AppEventId(u8 v) : id(v) {}
-    constexpr operator u8() const { return id; }
+    using EventId::EventId; // inherit constructors
 
     const char* str() const {
         switch (id) {
-            case NONE:                  return "NONE";
-            case ENTER:                 return "ENTER";
-            case LEAVE:                 return "LEAVE";
-            case TIMEOUT:               return "TIMEOUT";
             case IR_RX:                 return "IR_RX";
             case LIGHT_STATE:           return "LIGHT_STATE";
             case LIGHT_LUM:             return "LIGHT_LUM";
             case LIGHT_RGB:             return "LIGHT_RGB";
-            default:                    return "?";
+            default:                    return lite::fsm::EventId::str();
         }
     }
 };
@@ -129,7 +116,7 @@ struct AppEvent {
             case Id::LIGHT_LUM:       return p1.light_lum.fmt(buffer);
             case Id::LIGHT_RGB:       return p1.light_rgb.fmt(buffer);
         }
-        snprintf(buffer, N, "event id=%u", id.id); 
+        snprintf(buffer, N, "event %s", id.str()); 
         return buffer;        
     }
 };

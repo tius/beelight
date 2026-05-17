@@ -16,6 +16,11 @@
 class Tcs34725 {
 //------------------------------------------------------------------------------    
 public:
+    struct Result {
+        bool    valid;
+        u16     y, r, g, b;
+    };
+
     Tcs34725(lite::Twi& twi, u8 addr)
         : twi_(twi), addr_(addr) 
     {
@@ -26,10 +31,10 @@ public:
         return state_;
     }
 
-    bool read_data(u16* data) {
+    Result read_data() {
         if ( !state_ ) {
             if ( !init_() ) {
-                return false;
+                return { .valid = false };
             }
             state_ = true;
         }
@@ -37,20 +42,21 @@ public:
         u8 status = 0;
         if (!read_reg_u8_(k_reg_status_, status)) {
             state_ = false;
-            return false;
+            return { .valid = false };
         }
 
         if ((status & k_status_avalid_) == 0) {
-            return false;
+            return { .valid = false };
         }
 
+        u16 d[4];
         for (int i = 0; i < 4; i++) {
-            if (!read_reg_u16_(k_reg_cdatal_ + (i * 2u), data[i])) {
+            if (!read_reg_u16_(k_reg_cdatal_ + (i * 2u), d[i])) {
                 state_ = false;
-                return false;
+                return { .valid = false};
             }
         }
-        return true;
+        return { .valid = true, .y = d[0], .r = d[1], .g = d[2], .b = d[3] };
     }
 
     auto full_scale_counts() const {

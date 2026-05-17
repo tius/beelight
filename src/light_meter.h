@@ -1,10 +1,10 @@
-//  manage light sensor tcs34725
+//  manage light sensor
 //
 //  see LICENSE file for terms
 
 #pragma once
 #include "app_event.h"
-#include "driver/Tcs34725.h"
+#include "driver/tcs34725.h"
 
 #include "lite/color/gamma_lut.h"
 #include "lite/core/event_bus.h"
@@ -18,17 +18,17 @@
 #define LOG_LEVEL       LIGHT_SENSOR_LOG
 
 //==============================================================================
-class LightSensor {
+class LightMeter {
 //------------------------------------------------------------------------------    
 using EventBus = lite::EventBus<AppEvent>;
 
 public:
-    LightSensor(lite::Twi& twi, EventBus& event_bus)
+    LightMeter(lite::Twi& twi, EventBus& event_bus)
         : event_bus_(event_bus)
         , timer_tcs_(MSG_THIS(on_timer_))
         , tcs_(twi, LIGHT_SENSOR_I2C_ADDR)
     {
-        set_state_( tcs_.state() ? ONLINE : OFFLINE );
+        set_state_();
         timer_tcs_.start_periodic(1s);
     }
 
@@ -46,8 +46,8 @@ private:
     };
     u8 state_  = UNKNOWN;
 
-    void set_state_(u8 new_state) {
-        if ( lite::changed(state_, new_state) ) {
+    void set_state_() {
+        if ( lite::changed(state_, tcs_.state() ? ONLINE : OFFLINE) ) {
             if (state_) LOG_INFO("online");
             else        LOG_WARN("offline");
             event_bus_.publish( {AppEventId::LIGHT_STATE, { .light_state = { bool(state_) }}} );
@@ -56,35 +56,29 @@ private:
 
     //--------------------------------------------------------------------------
     void on_timer_() {
-        u16 data_u16[4];
+        auto r = tcs_.read_data();
+        set_state_();
+        if (!r.valid) return;
 
-        auto r = tcs_.read_data(data_u16);
-        set_state_( tcs_.state() ? ONLINE : OFFLINE );
-        if (!r) return;
+        LOG_INFO("c=%05u r=%05u g=%05u b=%05u", r.y, r.r, r.g, r.b);
 
-        LOG_INFO("c=%05u r=%05u g=%05u b=%05u", data_u16[0], data_u16[1], data_u16[2], data_u16[3]);
-
-        u8 data_u8[4];
-        for (int i = 0; i < 4; i++) {
-            data_u8[i] = lite::gamma_u10_to_u8( to_linear_u10_(data_u16[i]) );
-        }
         event_bus_.publish({AppEventId::LIGHT_LUM, { .light_lum = { 
-            .y = data_u8[0] } 
-        }});
+            .y = raw_to_u8_(r.y)
+        }}});
         event_bus_.publish({AppEventId::LIGHT_RGB, { .light_rgb = { 
-            .r = data_u8[1], 
-            .g = data_u8[2], 
-            .b = data_u8[3] } 
+            .r = raw_to_u8_(r.r), 
+            .g = raw_to_u8_(r.g), 
+            .b = raw_to_u8_(r.b) } 
         }});
     }
 
     //--------------------------------------------------------------------------
-    u16 to_linear_u10_(u16 raw_count) {
+    u8 raw_to_u8_(u16 raw_count) {
         auto counts = tcs_.full_scale_counts();
 
         const u32 clamped = std::min(static_cast<u32>(raw_count), counts);
         const u32 scaled = (clamped * 1023u + (counts / 2u)) / counts;
-        return static_cast<u16>(scaled);
+        return lite::gamma_u10_to_u8(scaled);
     }
 };
 

@@ -21,52 +21,10 @@ public:
 private:
     lite::EventHook<AppEvent> event_hook_;
 
-    static u8 p1_byte3_(u32 value) {
-        return static_cast<u8>((value >> 24u) & 0xffu);
-    }
-
-    static u8 p1_byte2_(u32 value) {
-        return static_cast<u8>((value >> 16u) & 0xffu);
-    }
-
-    static u8 p1_byte1_(u32 value) {
-        return static_cast<u8>((value >> 8u) & 0xffu);
-    }
-
-    static u8 p1_byte0_(u32 value) {
-        return static_cast<u8>(value & 0xffu);
-    }
-
     // log all events as they are published
     void on_event(const AppEvent& event) {
-        if (event.id == AppEventId::LIGHT_STATE) {
-            const char* available = (event.p1 != 0u) ? "yes" : "no";
-            LOG_INFO(
-                "%s available=%s",
-                AppEventId(event.id).str(),
-                available
-            );
-            return;
-        }
-
-        if (event.id == AppEventId::LIGHT_DATA) {
-            LOG_INFO(
-                "%s c=%u r=%u g=%u b=%u",
-                AppEventId(event.id).str(),
-                static_cast<unsigned>(p1_byte3_(event.p1)),
-                static_cast<unsigned>(p1_byte2_(event.p1)),
-                static_cast<unsigned>(p1_byte1_(event.p1)),
-                static_cast<unsigned>(p1_byte0_(event.p1))
-            );
-            return;
-        }
-
-        LOG_INFO(
-            "%s p1=%04x %04x", 
-            AppEventId(event.id).str(), 
-            lite::hi_word(event.p1), 
-            lite::lo_word(event.p1)
-    );
+        char buffer[128];
+        LOG_DEBUG("%s", event.fmt(buffer));
     }
 };
 

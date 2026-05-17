@@ -50,7 +50,7 @@ private:
         if ( lite::changed(state_, new_state) ) {
             if (state_) LOG_INFO("online");
             else        LOG_WARN("offline");
-            event_bus_.publish( {AppEventId::LIGHT_STATE, state_} );
+            event_bus_.publish( {AppEventId::LIGHT_STATE, { .light_state = { bool(state_) }}} );
         }
     }
 
@@ -68,7 +68,14 @@ private:
         for (int i = 0; i < 4; i++) {
             data_u8[i] = lite::gamma_u10_to_u8( to_linear_u10_(data_u16[i]) );
         }
-        event_bus_.publish({AppEventId::LIGHT_DATA, pack_data_(data_u8)});
+        event_bus_.publish({AppEventId::LIGHT_LUM, { .light_lum = { 
+            .y = data_u8[0] } 
+        }});
+        event_bus_.publish({AppEventId::LIGHT_RGB, { .light_rgb = { 
+            .r = data_u8[1], 
+            .g = data_u8[2], 
+            .b = data_u8[3] } 
+        }});
     }
 
     //--------------------------------------------------------------------------
@@ -78,13 +85,6 @@ private:
         const u32 clamped = std::min(static_cast<u32>(raw_count), counts);
         const u32 scaled = (clamped * 1023u + (counts / 2u)) / counts;
         return static_cast<u16>(scaled);
-    }
-
-    static u32 pack_data_(const u8* data) {
-        return (static_cast<u32>(data[0]) << 24u)
-            | (static_cast<u32>(data[1]) << 16u)
-            | (static_cast<u32>(data[2]) << 8u)
-            | static_cast<u32>(data[3]);
     }
 };
 

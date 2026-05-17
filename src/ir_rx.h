@@ -30,17 +30,18 @@ public:
         if (TinyIRReceiverDecode()) {
             // printTinyIRReceiverResultMinimal(&Serial);
             LOG_INFO( 
-                "addr=0x%04X cmd=0x%04X flags=0x%02X", 
+                "addr=0x%02X cmd=0x%02X flags=0x%02X", 
                 TinyIRReceiverData.Address, 
                 TinyIRReceiverData.Command, 
                 TinyIRReceiverData.Flags 
             );   
 
             // p1 packs address and command: high16=addr low16=cmd
-            const u32 payload =
-                (static_cast<u32>(TinyIRReceiverData.Address) << 16u)
-                | static_cast<u32>(TinyIRReceiverData.Command);
-            event_bus_.publish ( {AppEventId::IR_RX, payload} );
+            event_bus_.publish ( {AppEventId::IR_RX, { .ir_rx = { 
+                .addr   = TinyIRReceiverData.Address, 
+                .cmd    = TinyIRReceiverData.Command, 
+                .repeat = bool(TinyIRReceiverData.Flags & IRDATA_FLAGS_IS_REPEAT)
+            }}} );
         }
     }
 

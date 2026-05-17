@@ -1,9 +1,14 @@
 # to do - personal notes
 
+## hardware
+- bma
+
 ## app
 - dithering
 
 ## toolkit
+- load, latency
+- rtcmem
 
 ## build
 - release version
@@ -13,14 +18,8 @@
 - google docs
 
 ## driver low level
-- gpio
 - adc
-- pwm
-- twi
-- infrared
-- ws2812
 - esp-now
-- deep sleep
 
 ## driver high level
 - mcp73871 (resistor network)

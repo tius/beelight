@@ -8,7 +8,6 @@
 #include "stripe.h"
 #include "ir_rx.h"
 #include "ir_tx.h"
-#include "twi_scan_cmd.h"
 #include "light_sensor.h"
 #include "event_logger.h"
 
@@ -19,7 +18,8 @@
 #include "lite/sys/clock.h"
 #include "lite/core/event_bus.h"
 #include "lite/core/timer.h"
-#include "lite/cli/sys_cmd.h"
+#include "lite/cmd/sys_cmd.h"
+#include "lite/cmd/twi_cmd.h"
 
 #define LOG_TAG         app
 #define LOG_LEVEL       trace
@@ -57,13 +57,13 @@ private:
 
     lite::CmdShell      shell_      {};
     lite::Console       console_    {shell_, serial_out_};
-    lite::sys::SysCmd   cmd_sys_    {shell_};
+    lite::cmd::SysCmd   cmd_sys_    {shell_};
 
     EventBus            event_bus_  {};
-    EventLogger         event_logger_{event_bus_};
+    // EventLogger         event_logger_{event_bus_};
 
     lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
-    TwiScanCmd          twi_scan_   {shell_, twi_};
+    lite::cmd::TwiCmd   twi_cmd_    {shell_, twi_};
     LightSensor         light_sensor_{twi_, event_bus_};
 
     RgbLed              rgb_led_    {};

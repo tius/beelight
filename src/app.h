@@ -65,6 +65,7 @@ private:
 
     lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
     lite::cmd::TwiCmd   twi_cmd_    {shell_, twi_};
+
     LightMeter          light_meter_{twi_, event_bus_};
     AccMeter            acc_meter_  {twi_, event_bus_};
 
@@ -78,7 +79,14 @@ private:
     lite::Timer         timer_      { MSG_THIS(on_timer_) };
     
     App() {
+        if (!light_meter_) {
+            LOG_ERROR("light meter not available: %s", light_meter_.status().str());
+        }
+        if (!acc_meter_) {
+            LOG_ERROR("acc meter not available: %s", acc_meter_.status().str());
+        }
         lite::std_out->println(APP_BANNER_TEXT);
+
         console_.ready();
         rgb_show_.set(RgbState::CHARGE);
 

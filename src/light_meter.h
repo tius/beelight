@@ -3,6 +3,7 @@
 //  see LICENSE file for terms
 
 #pragma once
+#include "status.h"
 #include "app_event.h"
 #include "driver/tcs34725.h"
 
@@ -12,7 +13,6 @@
 #include "lite/sys/twi.h"
 #include "lite/core/bits.h"
 #include "lite/core/timer.h"
-#include "lite/core/changed.h"
 
 #define LOG_TAG         light
 #define LOG_LEVEL       LIGHT_SENSOR_LOG
@@ -23,13 +23,38 @@ class LightMeter {
 using EventBus = lite::EventBus<AppEvent>;
 
 public:
+    struct MeterStatus : public Status {
+        enum : u8 {
+            OK = 0,
+            SENSOR_ERROR,
+        };
+        const char* str() const noexcept {
+            switch (code) {
+                case SENSOR_ERROR:  return "sensor error";
+                default:            return Status::str();
+            }
+        }
+    };
+
     LightMeter(lite::Twi& twi, EventBus& event_bus)
         : event_bus_(event_bus)
         , timer_tcs_(MSG_THIS(on_timer_))
         , tcs_(twi, TCS34725_I2C_ADDR)
     {
-        set_state_();
-        timer_tcs_.start_periodic(1s);
+        if (tcs_) {
+            timer_tcs_.start_periodic(1s);
+        }
+        else {
+            LOG_ERROR("tcs34725 init failed: %s", tcs_.status().str());
+            device_status_ = { MeterStatus::SENSOR_ERROR };
+        }
+    }
+
+    operator bool() const noexcept {
+        return device_status_.is_ok();
+    }
+    auto status() const noexcept {
+        return device_status_;
     }
 
 //------------------------------------------------------------------------------    
@@ -37,28 +62,12 @@ private:
     EventBus&       event_bus_;
     lite::Timer     timer_tcs_;
     Tcs34725        tcs_;
-
-    //--------------------------------------------------------------------------
-    enum : u8 {
-        OFFLINE,
-        ONLINE,
-        UNKNOWN
-    };
-    u8 state_  = UNKNOWN;
-
-    void set_state_() {
-        if ( lite::changed(state_, tcs_.state() ? ONLINE : OFFLINE) ) {
-            if (state_) LOG_INFO("online");
-            else        LOG_WARN("offline");
-            event_bus_.publish( {AppEventId::LIGHT_STATE, { .light_state = { bool(state_) }}} );
-        }
-    }
+    MeterStatus    device_status_;
 
     //--------------------------------------------------------------------------
     void on_timer_() {
         auto r = tcs_.read_data();
-        set_state_();
-        if (!r.valid) return;
+        if (!r.read_state.is_ok()) return;
 
         LOG_INFO("c=%05u r=%05u g=%05u b=%05u", r.y, r.r, r.g, r.b);
 

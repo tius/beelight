@@ -3,6 +3,7 @@
 //  see LICENSE file for terms
 
 #pragma once
+#include "status.h"
 #include "app_event.h"
 
 #include "lite/io/log.h"
@@ -21,28 +22,69 @@ using lh16  = lite::lh16;
     
 //------------------------------------------------------------------------------    
 public:
+    struct DeviceStatus : public Status {
+        enum : u8 {
+            OK = 0,
+            ERR_PROBE,
+            ERR_ID_READ,
+            ERR_ID_VALUE,
+            ERR_CFG_WRITE
+        };
+
+        const char* str() const noexcept {
+            switch (code) {
+                case ERR_PROBE:         return "probe failed";
+                case ERR_ID_READ:       return "id read failed";
+                case ERR_ID_VALUE:      return "id mismatch";
+                case ERR_CFG_WRITE:     return "config write failed";
+                default:                return Status::str();
+            }
+        }
+    };
+
+    struct ReadStatus : public Status {
+        enum : u8 {
+            OK = 0,
+            ERR_NOT_INIT,
+            ERR_DATA_READ
+        };
+
+        const char* str() const noexcept {
+            switch (code) {
+                case ERR_NOT_INIT:      return "not initialized";
+                case ERR_DATA_READ:     return "data read failed";
+                default:                return Status::str();
+            }
+        }
+    };
+
     struct Result {
-        bool        valid;
+        ReadStatus  read_state;
         s16         x, y, z;
         s8          temp;
+
+        operator bool() const noexcept {
+            return read_state.is_ok();
+        }
     };
 
     Bma253(lite::Twi& twi, u8 addr)
         : twi_(twi), addr_(addr) 
     {
-        state_ = init_();
+        device_status_ = init_();
     }
 
-    bool state() const {
-        return state_;
+    DeviceStatus status() const noexcept {
+        return device_status_;
+    }
+
+    operator bool() const noexcept {
+        return device_status_.is_ok();
     }
 
     Result read_data() {
-        if ( !state_ ) {
-            if ( !init_() ) {
-                return { .valid = false };
-            }
-            state_ = true;
+        if ( !device_status_ ) {
+            return { .read_state = { ReadStatus::ERR_NOT_INIT } };
         }
 
         struct RawData {
@@ -53,12 +95,11 @@ public:
         } raw = {};
 
         if (twi_.write_read(addr_, k_reg_acc_x_lsb_, raw).is_error()) {
-            state_ = false;
-            return { .valid = false };
+            return { .read_state = { ReadStatus::ERR_DATA_READ } };
         }
 
         return {
-            .valid = true,
+            .read_state = { ReadStatus::OK },
             .x = decode_axis_(raw.x),
             .y = decode_axis_(raw.y),
             .z = decode_axis_(raw.z),
@@ -70,7 +111,7 @@ public:
 private:
     lite::Twi&  twi_;
     u8          addr_;
-    bool        state_;
+    DeviceStatus device_status_;
 
     static constexpr u8 k_reg_chip_id_     = 0x00;
     static constexpr u8 k_reg_acc_x_lsb_   = 0x02;
@@ -82,30 +123,30 @@ private:
     static constexpr u8 k_bw_62_hz_        = 0x0B;
 
     //--------------------------------------------------------------------------
-    bool init_() {
+    DeviceStatus init_() {
         //  check for device presence on the bus
         if ( twi_.probe(addr_).is_error() ) {
-            return false;
+            return { DeviceStatus::ERR_PROBE };
         }
 
         //  check id register for expected value
         u8 id = 0;
         if (!read_reg_u8_(k_reg_chip_id_, id)) {
-            return false;
+            return { DeviceStatus::ERR_ID_READ };
         }
 
         if (id != k_chip_id_) {
-            return false;
+            return { DeviceStatus::ERR_ID_VALUE };
         }
 
         if (
             !write_reg_u8_(k_reg_pmu_range_, k_range_2g_)
          || !write_reg_u8_(k_reg_pmu_bw_, k_bw_62_hz_)
         ) {
-            return false;
+            return { DeviceStatus::ERR_CFG_WRITE };
         }
 
-        return true;
+        return { DeviceStatus::OK };
     }
 
     //--------------------------------------------------------------------------

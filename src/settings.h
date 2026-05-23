@@ -54,7 +54,7 @@
 //==============================================================================
 //  light sensor settings
 //------------------------------------------------------------------------------
-#define LIGHT_SENSOR_LOG        none        // log level for light sensor events
+#define LIGHT_SENSOR_LOG        info        // log level for light sensor events
 
 //==============================================================================
 //  tcs34725 driver settings

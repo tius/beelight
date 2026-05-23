@@ -3,6 +3,7 @@
 //  see LICENSE file for terms
 
 #pragma once
+#include "status.h"
 #include "app_event.h"
 
 #include "lite/io/log.h"
@@ -16,50 +17,101 @@
 class Tcs34725 {
 //------------------------------------------------------------------------------    
 public:
-    struct Result {
-        bool    valid;
-        u16     y, r, g, b;
+    struct DeviceStatus : public Status {
+        enum : u8 {
+            OK = 0,
+            ERR_PROBE,
+            ERR_ID_READ,
+            ERR_ID_VALUE,
+            ERR_CFG_WRITE,
+            ERR_ENABLE_WRITE
+        };
+        const char* str() const noexcept {
+            switch (code) {
+                case ERR_PROBE:         return "probe failed";
+                case ERR_ID_READ:       return "id read failed";
+                case ERR_ID_VALUE:      return "id mismatch";
+                case ERR_CFG_WRITE:     return "config write failed";
+                case ERR_ENABLE_WRITE:  return "enable write failed";
+                default:                return Status::str();
+            }
+        }
     };
 
+    struct ReadStatus : public Status {
+        enum : u8 {
+            OK = 0,
+            NOT_READY,
+            ERR_NOT_INIT,
+            ERR_STATUS_READ,
+            ERR_DATA_READ
+        };
+        const char* str() const noexcept {
+            switch (code) {
+                case NOT_READY:         return "not ready";
+                case ERR_NOT_INIT:      return "not initialized";
+                case ERR_STATUS_READ:   return "status read failed";
+                case ERR_DATA_READ:     return "data read failed";
+                default:                return Status::str();
+            }
+        }
+    };
+
+    struct Result {
+        ReadStatus read_state;
+        u16     y, r, g, b;
+
+        operator bool() const noexcept {
+            return read_state.is_ok();
+        }
+    };
+
+    //--------------------------------------------------------------------------
     Tcs34725(lite::Twi& twi, u8 addr)
         : twi_(twi), addr_(addr) 
     {
-        state_ = init_();
+        device_status_ = init_();
     }
 
-    bool state() const {
-        return state_;
+    auto status() const noexcept {
+        return device_status_;
     }
 
+    operator bool() const noexcept {
+        return device_status_.is_ok();
+    }
+
+    //--------------------------------------------------------------------------
     Result read_data() {
-        if ( !state_ ) {
-            if ( !init_() ) {
-                return { .valid = false };
-            }
-            state_ = true;
+        if ( !device_status_ ) {
+            return { .read_state = { ReadStatus::ERR_NOT_INIT } };
         }
 
         u8 status = 0;
         if (!read_reg_u8_(k_reg_status_, status)) {
-            state_ = false;
-            return { .valid = false };
+            return { .read_state = { ReadStatus::ERR_STATUS_READ } };
         }
 
         if ((status & k_status_avalid_) == 0) {
-            return { .valid = false };
+            return { .read_state = { ReadStatus::NOT_READY } };
         }
 
         u16 d[4];
         for (int i = 0; i < 4; i++) {
             if (!read_reg_u16_(k_reg_cdatal_ + (i * 2u), d[i])) {
-                state_ = false;
-                return { .valid = false};
+                return { .read_state = { ReadStatus::ERR_DATA_READ } };
             }
         }
-        return { .valid = true, .y = d[0], .r = d[1], .g = d[2], .b = d[3] };
+        return {
+            .read_state = { ReadStatus::OK },
+            .y = d[0],
+            .r = d[1],
+            .g = d[2],
+            .b = d[3]
+        };
     }
 
-    auto full_scale_counts() const {
+    auto full_scale_counts() const noexcept {
         return k_full_scale_counts_;
     }
 
@@ -67,7 +119,7 @@ public:
 private:
     lite::Twi&  twi_;
     u8          addr_;
-    bool        state_;
+    DeviceStatus device_status_;
 
     //--------------------------------------------------------------------------
     static constexpr u8 k_cmd_bit_          = 0x80;
@@ -100,21 +152,21 @@ private:
     ;
 
     //--------------------------------------------------------------------------
-    bool init_() {
+    DeviceStatus init_() {
         //  check for device presence on the bus
         if ( twi_.probe(addr_).is_error() ) {
-            return false;
+            return { DeviceStatus::ERR_PROBE };
         }
 
         //  check id register for expected value
         u8 id = 0;
         if (!read_reg_u8_(k_reg_id_, id)) {
             LOG_WARN("no id response");
-            return false;
+            return { DeviceStatus::ERR_ID_READ };
         }
         if (id != 0x44u && id != 0x4Du) {
             LOG_WARN("unexpected id=0x%02X", id);
-            return false;
+            return { DeviceStatus::ERR_ID_VALUE };
         }
 
         if (
@@ -123,7 +175,7 @@ private:
          || !write_reg_u8_(k_reg_enable_, k_enable_pon_)
         ) {
             LOG_WARN("config failed");
-            return false;
+            return { DeviceStatus::ERR_CFG_WRITE };
         }
 
         delay(3);
@@ -133,9 +185,9 @@ private:
             k_enable_pon_ | k_enable_aen_
         )) {
             LOG_WARN("enable failed");
-            return false;
+            return { DeviceStatus::ERR_ENABLE_WRITE };
         }
-        return true;
+        return { DeviceStatus::OK };
     }
 
     //--------------------------------------------------------------------------

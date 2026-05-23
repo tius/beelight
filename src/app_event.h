@@ -20,10 +20,8 @@ using lite::u32;
 struct AppEventId : public lite::fsm::EventId {
     enum : u8 {
         IR_RX           = lite::fsm::EventId::COUNT_,     
-        LIGHT_STATE,
         LIGHT_LUM,
         LIGHT_RGB,                                          
-        ACC_STATE,
         ACC_DATA,
     };
 
@@ -32,10 +30,8 @@ struct AppEventId : public lite::fsm::EventId {
     const char* str() const {
         switch (id) {
             case IR_RX:                 return "IR_RX";
-            case LIGHT_STATE:           return "LIGHT_STATE";
             case LIGHT_LUM:             return "LIGHT_LUM";
             case LIGHT_RGB:             return "LIGHT_RGB";
-            case ACC_STATE:             return "ACC_STATE";
             case ACC_DATA:              return "ACC_DATA";
             default:                    return lite::fsm::EventId::str();
         }
@@ -57,15 +53,6 @@ struct PayloadIrRx {
     }
 };    
 
-struct PayloadLightState {
-    bool present;
-    template <size_t N>
-    const char* fmt(char (&buffer)[N]) const {
-        snprintf(buffer, N, "light_state %s", present ? "present" : "non-present");
-        return buffer;
-    }
-};
-
 struct PayloadLightLum {
     u8      y;
     template <size_t N>
@@ -86,15 +73,6 @@ struct PayloadLightRgb {
     }
 };
 
-struct PayloadAccState {
-    bool present;
-    template <size_t N>
-    const char* fmt(char (&buffer)[N]) const {
-        snprintf(buffer, N, "acc_state %s", present ? "present" : "non-present");
-        return buffer;
-    }
-};  
-
 struct PayloadAccData {
     u8 x;
     u8 y;
@@ -110,10 +88,8 @@ struct PayloadAccData {
 struct Payload {
     union {
         PayloadIrRx         ir_rx;
-        PayloadLightState   light_state;
         PayloadLightLum     light_lum;
         PayloadLightRgb     light_rgb;
-        PayloadAccState     acc_state;
         PayloadAccData      acc_data;
     };
 };
@@ -138,7 +114,6 @@ struct AppEvent {
     const char* fmt(char (&buffer)[N]) const {
         switch (id) {
             case Id::IR_RX:           return p1.ir_rx.fmt(buffer);
-            case Id::LIGHT_STATE:     return p1.light_state.fmt(buffer);
             case Id::LIGHT_LUM:       return p1.light_lum.fmt(buffer);
             case Id::LIGHT_RGB:       return p1.light_rgb.fmt(buffer);
         }

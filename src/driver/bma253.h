@@ -1,0 +1,137 @@
+//  manage accelerometer sensor bma253
+//
+//  see LICENSE file for terms
+
+#pragma once
+#include "app_event.h"
+
+#include "lite/io/log.h"
+#include "lite/sys/twi.h"
+#include "lite/core/bits.h"
+
+#define LOG_TAG         bma253
+#define LOG_LEVEL       BMA253_LOG
+
+//==============================================================================
+class Bma253 {
+
+using s16   = lite::s16;
+using s8    = lite::s8;
+using lh16  = lite::lh16;
+    
+//------------------------------------------------------------------------------    
+public:
+    struct Result {
+        bool        valid;
+        s16         x, y, z;
+        s8          temp;
+    };
+
+    Bma253(lite::Twi& twi, u8 addr)
+        : twi_(twi), addr_(addr) 
+    {
+        state_ = init_();
+    }
+
+    bool state() const {
+        return state_;
+    }
+
+    Result read_data() {
+        if ( !state_ ) {
+            if ( !init_() ) {
+                return { .valid = false };
+            }
+            state_ = true;
+        }
+
+        struct RawData {
+            lh16    x;
+            lh16    y;
+            lh16    z;
+            u8      temp;
+        } raw = {};
+
+        if (twi_.write_read(addr_, k_reg_acc_x_lsb_, raw).is_error()) {
+            state_ = false;
+            return { .valid = false };
+        }
+
+        return {
+            .valid = true,
+            .x = decode_axis_(raw.x),
+            .y = decode_axis_(raw.y),
+            .z = decode_axis_(raw.z),
+            .temp = decode_temp_c_(raw.temp),
+        };
+    }
+
+//------------------------------------------------------------------------------    
+private:
+    lite::Twi&  twi_;
+    u8          addr_;
+    bool        state_;
+
+    static constexpr u8 k_reg_chip_id_     = 0x00;
+    static constexpr u8 k_reg_acc_x_lsb_   = 0x02;
+    static constexpr u8 k_reg_pmu_range_   = 0x0F;
+    static constexpr u8 k_reg_pmu_bw_      = 0x10;
+
+    static constexpr u8 k_chip_id_         = 0xFA;
+    static constexpr u8 k_range_2g_        = 0x03;
+    static constexpr u8 k_bw_62_hz_        = 0x0B;
+
+    //--------------------------------------------------------------------------
+    bool init_() {
+        //  check for device presence on the bus
+        if ( twi_.probe(addr_).is_error() ) {
+            return false;
+        }
+
+        //  check id register for expected value
+        u8 id = 0;
+        if (!read_reg_u8_(k_reg_chip_id_, id)) {
+            return false;
+        }
+
+        if (id != k_chip_id_) {
+            return false;
+        }
+
+        if (
+            !write_reg_u8_(k_reg_pmu_range_, k_range_2g_)
+         || !write_reg_u8_(k_reg_pmu_bw_, k_bw_62_hz_)
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    bool write_reg_u8_(u8 reg, u8 value) {
+        return twi_.write(addr_, reg, value).is_ok();
+    }
+
+    bool read_reg_u8_(u8 reg, u8& value) {
+        return twi_.write_read(addr_, reg, value).is_ok();
+    }
+
+    static s16 decode_axis_(u16 raw_word) {
+        const u16 raw10 = static_cast<u16>((raw_word >> 6u) & 0x03FFu);
+        if ((raw10 & 0x0200u) != 0u) {
+            return static_cast<s16>(raw10 | 0xFC00u);
+        }
+        return static_cast<s16>(raw10);
+    }
+
+    //  bma253 temperature register: 0 -> 24 deg C, 1 lsb -> 0.5 deg C
+    static s8 decode_temp_c_(u8 raw_temp) {
+        const s16 raw_signed = static_cast<s8>(raw_temp);
+        const s16 temp_x2 = static_cast<s16>(48 + raw_signed);
+        return static_cast<s8>(temp_x2 / 2);
+    }
+};
+
+#undef LOG_TAG
+#undef LOG_LEVEL

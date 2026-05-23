@@ -55,9 +55,20 @@
 //  light sensor settings
 //------------------------------------------------------------------------------
 #define LIGHT_SENSOR_LOG        none        // log level for light sensor events
-#define LIGHT_SENSOR_I2C_ADDR   0x29        // I2C address for the light sensor
 
 //==============================================================================
 //  tcs34725 driver settings
 //------------------------------------------------------------------------------
 #define TCS34725_LOG            none        // log level for tcs34725 events
+#define TCS34725_I2C_ADDR       0x29        // I2C address
+
+//==============================================================================
+//  accelerometer settings
+//------------------------------------------------------------------------------
+#define ACC_METER_LOG           info        // log level for accelerometer events
+
+//==============================================================================
+//  bma253 driver settings
+//------------------------------------------------------------------------------
+#define BMA253_LOG              none        // log level for bma253 events
+#define BMA253_I2C_ADDR         0x19        // I2C address

@@ -23,6 +23,8 @@ struct AppEventId : public lite::fsm::EventId {
         LIGHT_STATE,
         LIGHT_LUM,
         LIGHT_RGB,                                          
+        ACC_STATE,
+        ACC_DATA,
     };
 
     using EventId::EventId; // inherit constructors
@@ -33,6 +35,8 @@ struct AppEventId : public lite::fsm::EventId {
             case LIGHT_STATE:           return "LIGHT_STATE";
             case LIGHT_LUM:             return "LIGHT_LUM";
             case LIGHT_RGB:             return "LIGHT_RGB";
+            case ACC_STATE:             return "ACC_STATE";
+            case ACC_DATA:              return "ACC_DATA";
             default:                    return lite::fsm::EventId::str();
         }
     }
@@ -54,10 +58,10 @@ struct PayloadIrRx {
 };    
 
 struct PayloadLightState {
-    bool available;
+    bool present;
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
-        snprintf(buffer, N, "light_state %s", available ? "available" : "non-available");
+        snprintf(buffer, N, "light_state %s", present ? "present" : "non-present");
         return buffer;
     }
 };
@@ -82,6 +86,26 @@ struct PayloadLightRgb {
     }
 };
 
+struct PayloadAccState {
+    bool present;
+    template <size_t N>
+    const char* fmt(char (&buffer)[N]) const {
+        snprintf(buffer, N, "acc_state %s", present ? "present" : "non-present");
+        return buffer;
+    }
+};  
+
+struct PayloadAccData {
+    u8 x;
+    u8 y;
+    u8 z;
+    template <size_t N>
+    const char* fmt(char (&buffer)[N]) const {
+        snprintf(buffer, N, "acc_data x=%u y=%u z=%u", x, y, z);
+        return buffer;
+    }
+};
+
 //-----------------------------------------------------------------------------
 struct Payload {
     union {
@@ -89,6 +113,8 @@ struct Payload {
         PayloadLightState   light_state;
         PayloadLightLum     light_lum;
         PayloadLightRgb     light_rgb;
+        PayloadAccState     acc_state;
+        PayloadAccData      acc_data;
     };
 };
 

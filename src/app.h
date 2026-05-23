@@ -8,7 +8,8 @@
 #include "stripe.h"
 #include "ir_rx.h"
 #include "ir_tx.h"
-#include "light_sensor.h"
+#include "light_meter.h"
+#include "acc_meter.h"
 #include "event_logger.h"
 
 #include "lite/cli/cmd.h"
@@ -64,7 +65,8 @@ private:
 
     lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
     lite::cmd::TwiCmd   twi_cmd_    {shell_, twi_};
-    LightSensor         light_sensor_{twi_, event_bus_};
+    LightMeter          light_meter_{twi_, event_bus_};
+    AccMeter            acc_meter_  {twi_, event_bus_};
 
     RgbLed              rgb_led_    {};
     RgbShow             rgb_show_   {rgb_led_};
@@ -83,7 +85,7 @@ private:
         stripe_.clr( lite::k_rgb_red );
         stripe_.update();
 
-        timer_.start(60s);
+        // timer_.start(60s);
     }
 
     // prevent copying

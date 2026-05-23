@@ -26,7 +26,7 @@ public:
     LightMeter(lite::Twi& twi, EventBus& event_bus)
         : event_bus_(event_bus)
         , timer_tcs_(MSG_THIS(on_timer_))
-        , tcs_(twi, LIGHT_SENSOR_I2C_ADDR)
+        , tcs_(twi, TCS34725_I2C_ADDR)
     {
         set_state_();
         timer_tcs_.start_periodic(1s);

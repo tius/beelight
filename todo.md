@@ -5,6 +5,9 @@
 - ux dokument aufteilen
 
 ## schaltung
+- ir tx an vled
+- ir rx an vled?
+- ext. ws2812 an 5v
 - ansteuerung high-side switch über tiefpass?
 - gpout via diode an esp8266 rst?
 

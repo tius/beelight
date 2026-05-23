@@ -1,6 +1,6 @@
 # rysta board
 
-stand-alone description of the rysta board. covers the physical board only;
+stand-alone description of the Rysta board. covers the physical board only;
 how it is used in any specific product lives elsewhere.
 
 ## summary
@@ -12,7 +12,7 @@ how it is used in any specific product lives elsewhere.
 - on-board RGB LED
 - breakout connector X3 for power and signals
 
-## mcu
+## MCU
 
 - ESP8266EX
 - 4 MB flash
@@ -20,10 +20,11 @@ how it is used in any specific product lives elsewhere.
 
 ## power
 
-- input rail: 5V on connector X3
+- input rail: +5V on connectors X2, X3 and micro-USB
 - on-board LDO from 5V to 3.3V
 - LDO drop ~100 mV at ~100 mA
 - idle current via LDO ~80 µA in deep sleep at 3.7V input
+
 
 ## on-board button and wake circuit
 
@@ -51,9 +52,7 @@ bidirectionally:
 ## on-board rgb led
 
 - common cathode, active high, driven directly from GPIOs
-- `GPIO 15` red
-- `GPIO 12` green
-- `GPIO 14` blue
+- pin mapping is listed in the connectors table
 
 ## connectors
 
@@ -75,7 +74,7 @@ bidirectionally:
 | `GPIO 13` | hspi mosi  |            |       |                         | 9      | BUZ   |    |    |
 | `GPIO 14` | hspi clk   |            |       | LED blue [^4]           |        |       |    |    |
 | `GPIO 15` |            | pull low   |       | LED red [^4]            |        |       |    |    |
-| `GPIO 16` |            | driven high|       | button, wake circuit in, [^3] | 5      | WAKE  |    | 3  |
+| `GPIO 16` |            | driven high|       | button, wake circuit in, [^3]| 5 | WAKE  |    | 3  |
 
 notes:
 
@@ -89,14 +88,12 @@ notes:
 
 ## boot-strap behavior
 
-board-enforced boot levels (chip-level requirements are met by the board):
+board-enforced boot levels are listed in the connectors table. chip-level
+requirements are met by the board.
 
-- `GPIO 0` held high by on-board pull-up 10 k
-- `GPIO 2` held high by on-board pull-up 10 k
-- `GPIO 15` held low by the LED red driver (LED off at boot)
 - `GPIO 16` driven high by on-board pull-up 10 k
 
 ESP8266-level effects on un-driven pins (not specific to this board):
 
-- `GPIO 1` (uart0 txd) emits boot-loader output at boot
-- `GPIO 3` (uart0 rxd) is driven high at boot
+- uart0 txd emits boot-loader output at boot
+- uart0 rxd is driven high at boot

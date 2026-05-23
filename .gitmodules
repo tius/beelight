@@ -1,6 +1,3 @@
-[submodule "lib/toolkit"]
-	path = lib/toolkit
-	url = https://tius@github.com/tius/esp-litekit.git
 [submodule "lib/litekit"]
 	path = lib/litekit
 	url = https://tius@github.com/tius/litekit.git

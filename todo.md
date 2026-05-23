@@ -1,5 +1,11 @@
 # to do - personal notes
 
+## next steps
+- ir selftest
+- button
+- rtcmem?
+
+
 ## docs
 - gesamtstatus
 - ux dokument aufteilen

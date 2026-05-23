@@ -55,12 +55,17 @@
 //  light sensor settings
 //------------------------------------------------------------------------------
 #define LIGHT_SENSOR_LOG        info        // log level for light sensor events
+#define LIGHT_SENSOR_TYPE       VEML3328    // type of light sensor in the system
 
 //==============================================================================
 //  tcs34725 driver settings
 //------------------------------------------------------------------------------
 #define TCS34725_LOG            none        // log level for tcs34725 events
-#define TCS34725_I2C_ADDR       0x29        // I2C address
+
+//==============================================================================
+//  veml3328 driver settings
+//------------------------------------------------------------------------------
+#define VEML3328_LOG            none        // log level for veml3328 events
 
 //==============================================================================
 //  accelerometer settings
@@ -71,4 +76,3 @@
 //  bma253 driver settings
 //------------------------------------------------------------------------------
 #define BMA253_LOG              none        // log level for bma253 events
-#define BMA253_I2C_ADDR         0x19        // I2C address

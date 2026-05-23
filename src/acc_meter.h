@@ -38,7 +38,7 @@ public:
     AccMeter(lite::Twi& twi, EventBus& event_bus)
         : event_bus_(event_bus)
         , timer_acc_(MSG_THIS(on_timer_))
-        , acc_(twi, BMA253_I2C_ADDR)
+        , acc_(twi)
     {
         if (acc_) {
             timer_acc_.start_periodic(1s);

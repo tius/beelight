@@ -4,7 +4,6 @@
 
 #pragma once
 #include "status.h"
-#include "app_event.h"
 
 #include "lite/io/log.h"
 #include "lite/sys/twi.h"
@@ -67,8 +66,8 @@ public:
     };
 
     //--------------------------------------------------------------------------
-    Tcs34725(lite::Twi& twi, u8 addr)
-        : twi_(twi), addr_(addr) 
+    explicit Tcs34725(lite::Twi& twi)
+        : twi_(twi)
     {
         device_status_ = init_();
     }
@@ -118,10 +117,10 @@ public:
 //------------------------------------------------------------------------------    
 private:
     lite::Twi&  twi_;
-    u8          addr_;
     DeviceStatus device_status_;
 
     //--------------------------------------------------------------------------
+    static constexpr u8 k_i2c_addr_         = 0x29;
     static constexpr u8 k_cmd_bit_          = 0x80;
     static constexpr u8 k_reg_enable_       = 0x00;
     static constexpr u8 k_reg_atime_        = 0x01;
@@ -154,7 +153,7 @@ private:
     //--------------------------------------------------------------------------
     DeviceStatus init_() {
         //  check for device presence on the bus
-        if ( twi_.probe(addr_).is_error() ) {
+        if ( twi_.probe(k_i2c_addr_).is_error() ) {
             return { DeviceStatus::ERR_PROBE };
         }
 
@@ -193,18 +192,18 @@ private:
     //--------------------------------------------------------------------------
     bool write_reg_u8_(u8 reg, u8 value) {
         const u8 cmd = static_cast<u8>(k_cmd_bit_ | reg);
-        return twi_.write(addr_, cmd, value).is_ok();
+        return twi_.write(k_i2c_addr_, cmd, value).is_ok();
     }
 
     bool read_reg_u8_(u8 reg, u8& value) {
         const u8 cmd = static_cast<u8>(k_cmd_bit_ | reg);
-        return twi_.write_read(addr_, cmd, value).is_ok();
+        return twi_.write_read(k_i2c_addr_, cmd, value).is_ok();
     }
 
     bool read_reg_u16_(u8 reg, u16& value) {
         const u8 cmd = static_cast<u8>(k_cmd_bit_ | reg);
         lite::lh16 data;
-        if ( twi_.write_read( addr_, cmd, data ).is_error() ) {
+        if ( twi_.write_read( k_i2c_addr_, cmd, data ).is_error() ) {
             return false;
         }
 

@@ -5,7 +5,6 @@
 #pragma once
 #include "status.h"
 #include "app_event.h"
-#include "driver/tcs34725.h"
 
 #include "lite/color/gamma_lut.h"
 #include "lite/core/event_bus.h"
@@ -14,6 +13,28 @@
 #include "lite/core/bits.h"
 #include "lite/core/timer.h"
 
+//==============================================================================
+//  config values
+//------------------------------------------------------------------------------
+#ifndef LIGHT_SENSOR_LOG
+    #define LIGHT_SENSOR_LOG       none        // log level for light sensor events
+#endif
+#ifndef LIGHT_SENSOR_TYPE
+    #error LIGHT_SENSOR_TYPE not defined
+#endif
+
+//------------------------------------------------------------------------------
+#define LIGHT_SENSOR_TYPE_TCS34725  1
+#define LIGHT_SENSOR_TYPE_VEML3328  2
+#define LIGHT_SENSOR_TYPE_NUM       XCAT(LIGHT_SENSOR_TYPE_, LIGHT_SENSOR_TYPE)
+
+//------------------------------------------------------------------------------
+#if LIGHT_SENSOR_TYPE_NUM == LIGHT_SENSOR_TYPE_TCS34725
+    #include "driver/tcs34725.h"
+#elif LIGHT_SENSOR_TYPE_NUM == LIGHT_SENSOR_TYPE_VEML3328
+    #include "driver/veml3328.h"
+#endif
+
 #define LOG_TAG         light
 #define LOG_LEVEL       LIGHT_SENSOR_LOG
 
@@ -21,6 +42,14 @@
 class LightMeter {
 //------------------------------------------------------------------------------    
 using EventBus = lite::EventBus<AppEvent>;
+
+#if LIGHT_SENSOR_TYPE_NUM == LIGHT_SENSOR_TYPE_TCS34725
+    using Driver = Tcs34725;
+#elif LIGHT_SENSOR_TYPE_NUM == LIGHT_SENSOR_TYPE_VEML3328
+    using Driver = Veml3328;
+#else
+    #error unsupported LIGHT_SENSOR_TYPE
+#endif
 
 public:
     struct MeterStatus : public Status {
@@ -38,14 +67,14 @@ public:
 
     LightMeter(lite::Twi& twi, EventBus& event_bus)
         : event_bus_(event_bus)
-        , timer_tcs_(MSG_THIS(on_timer_))
-        , tcs_(twi, TCS34725_I2C_ADDR)
+        , timer_sensor_(MSG_THIS(on_timer_))
+        , sensor_(twi)
     {
-        if (tcs_) {
-            timer_tcs_.start_periodic(1s);
+        if (sensor_) {
+            timer_sensor_.start_periodic(1s);
         }
         else {
-            LOG_ERROR("tcs34725 init failed: %s", tcs_.status().str());
+            LOG_ERROR("init failed: %s", sensor_.status().str());
             device_status_ = { MeterStatus::SENSOR_ERROR };
         }
     }
@@ -60,13 +89,13 @@ public:
 //------------------------------------------------------------------------------    
 private:
     EventBus&       event_bus_;
-    lite::Timer     timer_tcs_;
-    Tcs34725        tcs_;
+    lite::Timer     timer_sensor_;
+    Driver    sensor_;
     MeterStatus    device_status_;
 
     //--------------------------------------------------------------------------
     void on_timer_() {
-        auto r = tcs_.read_data();
+        auto r = sensor_.read_data();
         if (!r.read_state.is_ok()) return;
 
         LOG_INFO("c=%05u r=%05u g=%05u b=%05u", r.y, r.r, r.g, r.b);
@@ -83,7 +112,7 @@ private:
 
     //--------------------------------------------------------------------------
     u8 raw_to_u8_(u16 raw_count) {
-        auto counts = tcs_.full_scale_counts();
+        auto counts = sensor_.full_scale_counts();
 
         const u32 clamped = std::min(static_cast<u32>(raw_count), counts);
         const u32 scaled = (clamped * 1023u + (counts / 2u)) / counts;

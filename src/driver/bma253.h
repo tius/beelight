@@ -4,7 +4,6 @@
 
 #pragma once
 #include "status.h"
-#include "app_event.h"
 
 #include "lite/io/log.h"
 #include "lite/sys/twi.h"
@@ -68,8 +67,8 @@ public:
         }
     };
 
-    Bma253(lite::Twi& twi, u8 addr)
-        : twi_(twi), addr_(addr) 
+    explicit Bma253(lite::Twi& twi)
+        : twi_(twi)
     {
         device_status_ = init_();
     }
@@ -94,7 +93,7 @@ public:
             u8      temp;
         } raw = {};
 
-        if (twi_.write_read(addr_, k_reg_acc_x_lsb_, raw).is_error()) {
+        if (twi_.write_read(k_i2c_addr_, k_reg_acc_x_lsb_, raw).is_error()) {
             return { .read_state = { ReadStatus::ERR_DATA_READ } };
         }
 
@@ -110,9 +109,9 @@ public:
 //------------------------------------------------------------------------------    
 private:
     lite::Twi&  twi_;
-    u8          addr_;
     DeviceStatus device_status_;
 
+    static constexpr u8 k_i2c_addr_        = 0x19;
     static constexpr u8 k_reg_chip_id_     = 0x00;
     static constexpr u8 k_reg_acc_x_lsb_   = 0x02;
     static constexpr u8 k_reg_pmu_range_   = 0x0F;
@@ -125,7 +124,7 @@ private:
     //--------------------------------------------------------------------------
     DeviceStatus init_() {
         //  check for device presence on the bus
-        if ( twi_.probe(addr_).is_error() ) {
+        if ( twi_.probe(k_i2c_addr_).is_error() ) {
             return { DeviceStatus::ERR_PROBE };
         }
 
@@ -151,11 +150,11 @@ private:
 
     //--------------------------------------------------------------------------
     bool write_reg_u8_(u8 reg, u8 value) {
-        return twi_.write(addr_, reg, value).is_ok();
+        return twi_.write(k_i2c_addr_, reg, value).is_ok();
     }
 
     bool read_reg_u8_(u8 reg, u8& value) {
-        return twi_.write_read(addr_, reg, value).is_ok();
+        return twi_.write_read(k_i2c_addr_, reg, value).is_ok();
     }
 
     static s16 decode_axis_(u16 raw_word) {

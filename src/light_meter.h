@@ -106,8 +106,8 @@ private:
         event_bus_.publish({AppEventId::LIGHT_RGB, { .light_rgb = { 
             .r = raw_to_u8_(r.r), 
             .g = raw_to_u8_(r.g), 
-            .b = raw_to_u8_(r.b) } 
-        }});
+            .b = raw_to_u8_(r.b) 
+        }}});
     }
 
     //--------------------------------------------------------------------------

@@ -71,7 +71,8 @@
 //  infrared settings
 //------------------------------------------------------------------------------
 #define INFRARED_LOG            debug       // log level for infrared events
-#define INFRARED_TX_DRIVER      BIT_BANG    // driver for infrared transmitter
+#define INFRARED_TX_DRIVER      TIMER1      // driver for infrared transmitter
+
 //==============================================================================
 //  tcs34725 driver settings
 //------------------------------------------------------------------------------

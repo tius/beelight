@@ -23,10 +23,13 @@
 #endif
 //------------------------------------------------------------------------------
 #define INFRARED_TX_DRIVER_BIT_BANG  1
+#define INFRARED_TX_DRIVER_TIMER1    2
 #define INFRARED_TX_DRIVER_NUM       XCAT(INFRARED_TX_DRIVER_, INFRARED_TX_DRIVER)
 
 #if INFRARED_TX_DRIVER_NUM == INFRARED_TX_DRIVER_BIT_BANG
     #include "driver/ir_tx_bit_bang.h"
+#elif INFRARED_TX_DRIVER_NUM == INFRARED_TX_DRIVER_TIMER1
+    #include "driver/ir_tx_timer1.h"
 #else
     #error unsupported INFRARED_TX_DRIVER
 #endif
@@ -90,6 +93,8 @@ private:
     EventBus&   event_bus_;
     #if INFRARED_TX_DRIVER_NUM == INFRARED_TX_DRIVER_BIT_BANG
         IrTxBitBang ir_tx_;
+    #elif INFRARED_TX_DRIVER_NUM == INFRARED_TX_DRIVER_TIMER1
+        IrTxTimer1  ir_tx_ {event_bus_};
     #endif
     IrRx        ir_rx_;
     InfraredStatus status_ = { InfraredStatus::OK };

@@ -4,6 +4,30 @@
 //  - timer1 has one callback slot
 //  - active tx overrides other setTimer1Callback users
 //
+//  operation:
+//  - timer1 callback emits the 38 khz carrier by direct GPOS/GPOC writes
+//  - direct gpio writes keep the carrier path fast and isr-safe
+//  - marks are represented by carrier edge counts
+//  - spaces are scheduled as cpu-cycle delays
+//  - timer1 may fire early, so next_edge_at gates every scheduled edge
+//  - next symbol is preloaded before the current space expires
+//  - copy the current space delay before loading the next symbol
+//
+//  why not startWaveform:
+//  - esp8266 waveform helpers also own timer1
+//  - waveform helpers are not safe to call from the timer1 callback
+//  - starting or stopping waveforms from the callback can trip the soft wdt
+//
+//  why tick:
+//  - setTimer1Callback(nullptr) is not allowed from the timer1 callback
+//  - callback marks tx done, turns tx off, and leaves timer1 idle
+//  - tick() sees done and runs cleanup from normal loop context
+//  - cleanup detaches timer1 and returns the engine to idle
+//
+//  constraints:
+//  - direct GPOS/GPOC writes require gpio 0..15
+//  - use tx_on_ and tx_off_ so active-low hardware keeps semantic on/off
+//
 //  see LICENSE file for terms
 
 #pragma once

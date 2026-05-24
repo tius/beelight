@@ -4,47 +4,263 @@
 
 #pragma once
 
-#include "app_event.h"
+#include "settings.h"
 
-#include "lite/io/log.h"
+#include "lite/core/types.h"
 
-#define IR_RECEIVE_PIN              IR_RX_GPIO       
-#define NO_LED_SEND_FEEDBACK_CODE
-#include "TinyIRReceiver.hpp"
-#undef IR_RECEIVE_PIN
-#undef NO_LED_SEND_FEEDBACK_CODE
+#include <Arduino.h>
+#include <esp8266_peri.h>
 
-#define LOG_TAG         irrx
-#define LOG_LEVEL       IR_RX_LOG
+using lite::u8;
+using lite::u32;
 
 //==============================================================================
 class IrRx {
 //------------------------------------------------------------------------------    
 public:
-	IrRx() noexcept	{
-        initPCIInterruptForTinyReceiver();
+    IrRx() noexcept {
+        Decoder::init();
     }
 
     struct Result {
-        bool    is_valid;
-        u8      addr;
-        u8     cmd;
-        bool    is_repeat;
+        bool	is_valid;
+        u8		addr;
+        u8		cmd;
+        bool	is_repeat;
     };
 
     Result read() {
-        if (!TinyIRReceiverDecode()) {
+        noInterrupts();
+        const bool is_ready = Decoder::frame_ready;
+        const u8 addr = Decoder::frame_addr;
+        const u8 cmd = Decoder::frame_cmd;
+        const bool is_repeat = Decoder::frame_repeat;
+        Decoder::frame_ready = false;
+        interrupts();
+
+        if (!is_ready) {
             return { .is_valid = false };
         }
-        
+
         return {
-            .is_valid   = true,
-            .addr       = TinyIRReceiverData.Address,
-            .cmd        = TinyIRReceiverData.Command,
-            .is_repeat  = bool(TinyIRReceiverData.Flags & IRDATA_FLAGS_IS_REPEAT)
+            .is_valid	= true,
+            .addr		= addr,
+            .cmd		= cmd,
+            .is_repeat	= is_repeat
         };
     }
-};
 
-#undef LOG_TAG
-#undef LOG_LEVEL
+//------------------------------------------------------------------------------
+private:
+    struct Decoder {
+        static_assert(IR_RX_GPIO < 16, "IrRx supports only gpio 0..15");
+
+        enum class State : u8 {
+            idle,
+            header_space,
+            repeat_mark,
+            bit_mark,
+            bit_space,
+        };
+
+        static constexpr u32 k_header_mark_us_ = 9000;
+        static constexpr u32 k_header_space_us_ = 4500;
+        static constexpr u32 k_repeat_space_us_ = 2250;
+        static constexpr u32 k_bit_mark_us_ = 560;
+        static constexpr u32 k_zero_space_us_ = 560;
+        static constexpr u32 k_one_space_us_ = 1690;
+        static constexpr u8 k_data_bit_cnt_ = 32;
+
+        inline static volatile bool frame_ready = false;
+        inline static volatile u8 frame_addr = 0;
+        inline static volatile u8 frame_cmd = 0;
+        inline static volatile bool frame_repeat = false;
+
+        inline static u32 last_edge_us = 0;
+        inline static u32 data = 0;
+        inline static u8 bit_cnt = 0;
+        inline static State state = State::idle;
+        inline static u8 last_addr = 0;
+        inline static u8 last_cmd = 0;
+        inline static bool has_last_data = false;
+
+        static void init() {
+            pinMode(IR_RX_GPIO, INPUT_PULLUP);
+
+            noInterrupts();
+            reset_();
+            frame_ready = false;
+            frame_addr = 0;
+            frame_cmd = 0;
+            frame_repeat = false;
+            last_addr = 0;
+            last_cmd = 0;
+            has_last_data = false;
+            last_edge_us = micros();
+            interrupts();
+
+            attachInterrupt(
+                digitalPinToInterrupt(IR_RX_GPIO),
+                on_edge_,
+                CHANGE
+            );
+        }
+
+        static void IRAM_ATTR on_edge_() {
+            const u32 now_us = micros();
+            const u32 duration_us = now_us - last_edge_us;
+            last_edge_us = now_us;
+
+            if (level_is_high_()) {
+                consume_mark_(duration_us);
+                return;
+            }
+
+            consume_space_(duration_us);
+        }
+
+        static bool IRAM_ATTR level_is_high_() {
+            return GPIP(IR_RX_GPIO);
+        }
+
+        static void IRAM_ATTR consume_mark_(u32 duration_us) {
+            switch (state) {
+                case State::idle:
+                    if (matches_(duration_us, k_header_mark_us_)) {
+                        state = State::header_space;
+                    }
+                    return;
+
+                case State::repeat_mark:
+                    if (matches_(duration_us, k_bit_mark_us_)) {
+                        publish_repeat_();
+                    }
+                    reset_();
+                    return;
+
+                case State::bit_mark:
+                    if (matches_(duration_us, k_bit_mark_us_)) {
+                        state = State::bit_space;
+                        return;
+                    }
+                    reset_();
+                    return;
+
+                default:
+                    reset_();
+                    return;
+            }
+        }
+
+        static void IRAM_ATTR consume_space_(u32 duration_us) {
+            switch (state) {
+                case State::idle:
+                    return;
+
+                case State::header_space:
+                    consume_header_space_(duration_us);
+                    return;
+
+                case State::bit_space:
+                    consume_bit_space_(duration_us);
+                    return;
+
+                default:
+                    reset_();
+                    return;
+            }
+        }
+
+        static void IRAM_ATTR consume_header_space_(u32 duration_us) {
+            if (matches_(duration_us, k_header_space_us_)) {
+                data = 0;
+                bit_cnt = 0;
+                state = State::bit_mark;
+                return;
+            }
+
+            if (matches_(duration_us, k_repeat_space_us_)) {
+                state = State::repeat_mark;
+                return;
+            }
+
+            reset_();
+        }
+
+        static void IRAM_ATTR consume_bit_space_(u32 duration_us) {
+            if (matches_(duration_us, k_zero_space_us_)) {
+                append_bit_(false);
+                return;
+            }
+
+            if (matches_(duration_us, k_one_space_us_)) {
+                append_bit_(true);
+                return;
+            }
+
+            reset_();
+        }
+
+        static void IRAM_ATTR append_bit_(bool is_one) {
+            if (is_one) {
+                data |= static_cast<u32>(1) << bit_cnt;
+            }
+
+            ++bit_cnt;
+            if (bit_cnt == k_data_bit_cnt_) {
+                publish_data_();
+                reset_();
+                return;
+            }
+
+            state = State::bit_mark;
+        }
+
+        static void IRAM_ATTR publish_data_() {
+            const u8 addr = static_cast<u8>(data);
+            const u8 addr_inv = static_cast<u8>(data >> 8);
+            const u8 cmd = static_cast<u8>(data >> 16);
+            const u8 cmd_inv = static_cast<u8>(data >> 24);
+
+            if (static_cast<u8>(~addr) != addr_inv) {
+                return;
+            }
+
+            if (static_cast<u8>(~cmd) != cmd_inv) {
+                return;
+            }
+
+            last_addr = addr;
+            last_cmd = cmd;
+            has_last_data = true;
+            publish_(addr, cmd, false);
+        }
+
+        static void IRAM_ATTR publish_repeat_() {
+            if (!has_last_data) {
+                return;
+            }
+
+            publish_(last_addr, last_cmd, true);
+        }
+
+        static void IRAM_ATTR publish_(u8 addr, u8 cmd, bool is_repeat) {
+            frame_addr = addr;
+            frame_cmd = cmd;
+            frame_repeat = is_repeat;
+            frame_ready = true;
+        }
+
+        static void IRAM_ATTR reset_() {
+            data = 0;
+            bit_cnt = 0;
+            state = State::idle;
+        }
+
+        static bool IRAM_ATTR matches_(u32 duration_us, u32 target_us) {
+            const u32 tolerance_us = target_us / 3;
+            return duration_us >= target_us - tolerance_us
+                && duration_us <= target_us + tolerance_us;
+        }
+    };
+};

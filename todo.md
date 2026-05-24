@@ -1,12 +1,8 @@
 # to do - personal notes
 
 ## next steps
-- ir tx timer1
-- ir rx
-- ir selftest
 - button
 - rtcmem?
-
 
 ## docs
 - gesamtstatus

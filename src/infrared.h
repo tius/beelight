@@ -132,10 +132,10 @@ private:
         delay(10);
         auto r = ir_rx_.read();
         if (r.is_valid) {
-            LOG_INFO("self test: received %02X.%02X %s", r.addr, r.cmd, r.is_repeat ? "r" : "");
+            LOG_DEBUG("self test: received %02X.%02X %s", r.addr, r.cmd, r.is_repeat ? "r" : "");
         } 
         else {
-            LOG_INFO("self test: no signal");
+            LOG_WARN("self test: no signal");
         }
         return r.is_valid && r.addr == 0x12 && r.cmd == 0x34;
     }

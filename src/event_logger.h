@@ -10,16 +10,22 @@
 #include "app_event.h"
 
 #define LOG_TAG		event
-#define LOG_LEVEL	trace
+#define LOG_LEVEL	EVENT_LOG
 
 //=============================================================================
 class EventLogger final {
+//-----------------------------------------------------------------------------
+using EventBus = lite::EventBus<AppEvent>;
+using EventHook = lite::EventHook<AppEvent>;
+//-----------------------------------------------------------------------------
 public:
-    EventLogger(lite::EventBus<AppEvent>& event_bus) noexcept
+    EventLogger(EventBus& event_bus) noexcept
     : event_hook_(event_bus, METHOD_THIS(on_event)) {}
 
+//-----------------------------------------------------------------------------
 private:
-    lite::EventHook<AppEvent> event_hook_;
+
+    EventHook event_hook_;
 
     // log all events as they are published
     void on_event(const AppEvent& event) {

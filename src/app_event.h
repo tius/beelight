@@ -13,16 +13,20 @@ class AppEvent;
 using lite::u8;
 using lite::u16;
 using lite::u32;
+using lite::s16;
 
 #pragma pack(push, 1)
 
 //=============================================================================
 struct AppEventId : public lite::fsm::EventId {
     enum : u8 {
-        IR_RX           = lite::fsm::EventId::COUNT_,     
+        IR_RX           = lite::fsm::EventId::COUNT_,
+        PWM_SUSPEND,
+        PWM_RESUME,
         LIGHT_LUM,
-        LIGHT_RGB,                                          
-        ACC_DATA,
+        LIGHT_RGB,
+        TEMP,
+        TILT,
     };
 
     using EventId::EventId; // inherit constructors
@@ -30,9 +34,12 @@ struct AppEventId : public lite::fsm::EventId {
     const char* str() const {
         switch (id) {
             case IR_RX:                 return "IR_RX";
+            case PWM_SUSPEND:           return "PWM_SUSPEND";
+            case PWM_RESUME:            return "PWM_RESUME";
             case LIGHT_LUM:             return "LIGHT_LUM";
             case LIGHT_RGB:             return "LIGHT_RGB";
-            case ACC_DATA:              return "ACC_DATA";
+            case TEMP:                  return "TEMP";
+            case TILT:                  return "TILT";
             default:                    return lite::fsm::EventId::str();
         }
     }
@@ -73,13 +80,23 @@ struct PayloadLightRgb {
     }
 };
 
-struct PayloadAccData {
-    u8 x;
-    u8 y;
-    u8 z;
+struct PayloadTemp {
+    s16 celsius10;
+
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
-        snprintf(buffer, N, "acc_data x=%u y=%u z=%u", x, y, z);
+        snprintf(buffer, N, "temp %d.%d°C", int(celsius10) / 10, int(celsius10) % 10);
+        return buffer;
+    }
+};
+
+struct PayloadTilt {
+    u8 pitch;
+    u8 roll;
+
+    template <size_t N>
+    const char* fmt(char (&buffer)[N]) const {
+        snprintf(buffer, N, "tilt pitch=%u roll=%u", pitch, roll);
         return buffer;
     }
 };
@@ -90,7 +107,8 @@ struct Payload {
         PayloadIrRx         ir_rx;
         PayloadLightLum     light_lum;
         PayloadLightRgb     light_rgb;
-        PayloadAccData      acc_data;
+        PayloadTilt      tilt;
+        PayloadTemp         temp;
     };
 };
 
@@ -113,9 +131,17 @@ struct AppEvent {
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
         switch (id) {
-            case Id::IR_RX:           return p1.ir_rx.fmt(buffer);
-            case Id::LIGHT_LUM:       return p1.light_lum.fmt(buffer);
-            case Id::LIGHT_RGB:       return p1.light_rgb.fmt(buffer);
+            case Id::IR_RX:             return p1.ir_rx.fmt(buffer);
+            case Id::PWM_SUSPEND:
+                snprintf(buffer, N, "pwm_suspend");
+                return buffer;
+            case Id::PWM_RESUME:
+                snprintf(buffer, N, "pwm_resume");
+                return buffer;
+            case Id::LIGHT_LUM:         return p1.light_lum.fmt(buffer);
+            case Id::LIGHT_RGB:         return p1.light_rgb.fmt(buffer);
+            case Id::TILT:              return p1.tilt.fmt(buffer);
+            case Id::TEMP:              return p1.temp.fmt(buffer);
         }
         snprintf(buffer, N, "event %s", id.str()); 
         return buffer;        

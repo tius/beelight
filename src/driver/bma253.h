@@ -60,7 +60,7 @@ public:
     struct Result {
         ReadStatus  read_state;
         s16         x, y, z;
-        s8          temp;
+        s16         celsius10;
 
         operator bool() const noexcept {
             return read_state.is_ok();
@@ -102,7 +102,7 @@ public:
             .x = decode_axis_(raw.x),
             .y = decode_axis_(raw.y),
             .z = decode_axis_(raw.z),
-            .temp = decode_temp_c_(raw.temp),
+            .celsius10 = decode_temp_c10_(raw.temp),
         };
     }
 
@@ -165,11 +165,11 @@ private:
         return static_cast<s16>(raw10);
     }
 
-    //  bma253 temperature register: 0 -> 24 deg C, 1 lsb -> 0.5 deg C
-    static s8 decode_temp_c_(u8 raw_temp) {
+    //  bma253 temperature register: 0 -> 24.0 deg C, 1 lsb -> 0.5 deg C
+    static s16 decode_temp_c10_(u8 raw_temp) {
         const s16 raw_signed = static_cast<s8>(raw_temp);
         const s16 temp_x2 = static_cast<s16>(48 + raw_signed);
-        return static_cast<s8>(temp_x2 / 2);
+        return static_cast<s16>(temp_x2 * 5);
     }
 };
 

@@ -72,16 +72,21 @@ public:
 
     void set(u8 state) noexcept {
         if ( !lite::changed(state_, state) ) return;
+
+        apply_state_(state_);
+    }
+
+//-----------------------------------------------------------------------------
+private:
+    void apply_state_(u8 state) noexcept {
         morse_.off();
         switch (state) {
             case RgbState::OFF:     morse_.play("gI"); break;
             case RgbState::CHARGE:  morse_.play("r~"); break;
             case RgbState::TEST:    morse_.play("b-"); break;
         }
-	}
+    }
 
-//-----------------------------------------------------------------------------
-private:
     RgbLed&         led_;
     RgbMorseBreath  morse_{led_};
     u8              state_ = 0;

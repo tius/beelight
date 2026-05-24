@@ -6,8 +6,7 @@
 #include "app_event.h"
 #include "rgb_show.h"
 #include "stripe.h"
-#include "ir_rx.h"
-#include "ir_tx.h"
+#include "infrared.h"
 #include "light_meter.h"
 #include "acc_meter.h"
 #include "event_logger.h"
@@ -43,7 +42,7 @@ public:
 			console_.process(char(c));
 		}
         stripe_.tick();
-        ir_rx.tick();
+        infrared_.tick();
 	}
 
 //------------------------------------------------------------------------------
@@ -61,19 +60,18 @@ private:
     lite::cmd::SysCmd   cmd_sys_    {shell_};
 
     EventBus            event_bus_  {};
-    // EventLogger         event_logger_{event_bus_};
+    EventLogger         event_logger_{event_bus_};
 
     lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
     lite::cmd::TwiCmd   twi_cmd_    {shell_, twi_};
 
     LightMeter          light_meter_{twi_, event_bus_};
     AccMeter            acc_meter_  {twi_, event_bus_};
+    Infrared            infrared_   {event_bus_};
 
-    RgbLed              rgb_led_    {};
+    RgbLed              rgb_led_    {event_bus_};
     RgbShow             rgb_show_   {rgb_led_};
     lite::Cmd           cmd_led_    {shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led_)};
-    IrRx                ir_rx       {event_bus_};
-    IrTx                ir_tx       {};
     Stripe              stripe_     {};
 
     lite::Timer         timer_      { MSG_THIS(on_timer_) };
@@ -85,6 +83,10 @@ private:
         if (!acc_meter_) {
             LOG_ERROR("acc meter not available: %s", acc_meter_.status().str());
         }
+        if (!infrared_) {
+            LOG_ERROR("infrared not available: %s", infrared_.status().str());
+        }
+
         lite::std_out->println(APP_BANNER_TEXT);
 
         console_.ready();

@@ -1,4 +1,8 @@
-//  ir transmitter using timer1 backend
+//  ir transmitter using timer1 carrier backend
+//
+//  caveats:
+//  - timer1 has one callback slot
+//  - active tx overrides other setTimer1Callback users
 //
 //  see LICENSE file for terms
 
@@ -6,37 +10,277 @@
 #include "settings.h"
 #include "ir_tx_base.h"
 
+#include "lite/core/int_arith.h"
 #include "lite/core/types.h"
-#include "lite/sys/gpio.h"
 
 #include <Arduino.h>
+#include <core_esp8266_waveform.h>
+#include <esp8266_peri.h>
 
-using lite::s32;
 using lite::u8;
 using lite::u16;
 using lite::u32;
+using lite::s32;
 
 //==============================================================================
 class IrTxTimer1 : public IrTxBase<IrTxTimer1> {
-//-----------------------------------------------------------------------------
-using EventBus = lite::EventBus<AppEvent>;
-using EventHook = lite::EventHook<AppEvent>;
 //------------------------------------------------------------------------------
 public:
-    explicit IrTxTimer1(EventBus& event_bus) noexcept
-        : event_bus_(event_bus) {}
-
-    void send_data_frame(u32 raw_frame, u16 mark_us, u16 space_us) {
+    IrTxTimer1() {
+        tx_engine_.init();
     }
 
-    void send_repeat_frame(u16 mark_us, u16 space_us) {
+    bool is_ready() const noexcept {
+        return tx_engine_.is_ready();
+    }
+
+    void tick() {
+        tx_engine_.tick();
+    }
+
+    bool send_data_frame(u32 raw_frame, u16 mark_us, u16 space_us) {
+        if (!is_ready()) {
+            return false;
+        }
+        tx_engine_.start(raw_frame, mark_us, space_us);
+        return true;
+    }
+
+    bool send_repeat_frame(u16 mark_us, u16 space_us) {
+        if (!is_ready()) {
+            return false;
+        }
+        tx_engine_.start_repeat(mark_us, space_us);
+        return true;
     }
 
 //------------------------------------------------------------------------------
 private:
-    using TxPin = lite::gpio::Output<IR_TX_GPIO>;
+    struct TxEngine {
+        static_assert(IR_TX_GPIO < 16,  "IrTxTimer1 supports only gpio 0..15");
 
-    EventBus&   event_bus_;
-    TxPin       tx_pin_{};
+        enum class State : u8 {
+            idle,
+            symbol,
+            done,
+        };
+
+        static constexpr u32 k_tx_mask_ = 1u << IR_TX_GPIO;
+
+        //  38 khz carrier timing, about 31 % duty
+        static constexpr u16 k_carrier_on_us_      = 8;
+        static constexpr u16 k_carrier_off_us_     = 18;
+
+        //  nec timing
+        static constexpr u16 k_bit_mark_us_        = 560;
+        static constexpr u16 k_zero_space_us_      = 560;
+        static constexpr u16 k_one_space_us_       = 1690;
+        static constexpr u8  k_data_bit_cnt_       = 32;
+
+        //  precomputed values for timer1 scheduling
+        static constexpr u32 k_carrier_on_delay_   = microsecondsToClockCycles(k_carrier_on_us_);
+        static constexpr u32 k_carrier_off_delay_  = microsecondsToClockCycles(k_carrier_off_us_);
+        static constexpr u32 k_carrier_period_     = k_carrier_on_delay_ + k_carrier_off_delay_;
+
+        static constexpr u32 k_bit_mark_delay_     = microsecondsToClockCycles(k_bit_mark_us_);
+        static constexpr u32 k_zero_space_delay_   = microsecondsToClockCycles(k_zero_space_us_);
+        static constexpr u32 k_one_space_delay_    = microsecondsToClockCycles(k_one_space_us_);
+
+        //  timer 1 limits
+        static constexpr u32 k_delay_min_          = microsecondsToClockCycles(4);
+        static constexpr u32 k_delay_max_          = microsecondsToClockCycles(10000);
+
+        //  compute number of carrier edges for a given delay
+        static constexpr u32 delay_to_carrier_cnt_(u32 delay) {
+            const u32 carrier_periods = lite::div_round_up(delay, k_carrier_period_);
+            return carrier_periods * 2;
+        }
+
+        //----------------------------------------------------------------------
+        inline static u32   data;
+        inline static u8    bit_cnt;
+
+        inline static u32   carrier_cnt;
+        inline static u32   space_delay;
+        inline static u32   next_edge_at;
+
+        inline static volatile State state = State::idle;
+
+        //----------------------------------------------------------------------
+        void init() {
+            tx_off_();
+            pinMode(IR_TX_GPIO, OUTPUT);
+        }
+
+        bool is_ready() const noexcept {
+            return state == State::idle;
+        }
+
+        //----------------------------------------------------------------------
+        static void start(u32 raw_frame, u16 mark_us_, u16 space_us_) {
+            start_(raw_frame, mark_us_, space_us_, k_data_bit_cnt_);
+        }
+
+        static void start_repeat(u16 mark_us_, u16 space_us_) {
+            start_(0, mark_us_, space_us_, 0);
+        }
+
+        //----------------------------------------------------------------------
+        void tick() {
+            if (state != State::done) {
+                return;
+            }
+
+            setTimer1Callback(nullptr);
+            tx_off_();
+            carrier_cnt = 0;
+            next_edge_at = 0;
+            state = State::idle;
+        }
+
+        //----------------------------------------------------------------------
+        static void start_(u32 raw_frame, u16 mark_us_, u16 space_us_, u8 bit_cnt_) {
+            tx_off_();
+
+            data            = raw_frame;
+            carrier_cnt     = 0;
+            next_edge_at    = 0;
+            bit_cnt         = bit_cnt_ + 1;         // data bits + stop bit
+
+            load_symbol_(
+                delay_to_carrier_cnt_(microsecondsToClockCycles(mark_us_)),
+                microsecondsToClockCycles(space_us_)
+            );
+
+            setTimer1Callback(on_timer1_);
+        }
+
+        //----------------------------------------------------------------------
+        static u32 IRAM_ATTR on_timer1_() {
+            const u32 now = now_cycles_();
+            if (!is_due_(now)) {
+                return timer_delay_(next_edge_at - now);
+            }
+
+            if (carrier_cnt > 0) {
+                return send_carrier_(now);
+            }
+
+            const State current_state = state;
+            switch (current_state) {
+                case State::idle:
+                    return idle_();
+                case State::symbol:
+                    return finish_symbol_(now);
+                default:
+                    return done_();
+            }
+        }
+
+        static bool IRAM_ATTR is_due_(u32 now) {
+            return next_edge_at == 0
+                || static_cast<s32>(now - next_edge_at) >= 0;
+        }
+
+        static u32 IRAM_ATTR send_carrier_(u32 now) {
+            const bool edge_is_on = (carrier_cnt & 1u) == 0;
+
+            --carrier_cnt;
+
+            if (edge_is_on) {
+                tx_on_();
+                return schedule_(now, k_carrier_on_delay_);
+            }
+            else {
+                tx_off_();
+                return schedule_(now, k_carrier_off_delay_);
+            }
+        }
+
+        static u32 IRAM_ATTR finish_symbol_(u32 now) {
+            tx_off_();
+
+            const u32 current_space_delay = space_delay;
+            if (bit_cnt == 0) {
+                state = State::done;
+            }
+            else {
+                load_next_symbol_();
+            }
+            return schedule_(now, current_space_delay);
+        }
+
+        static void IRAM_ATTR load_next_symbol_() {
+            const bool is_one = (data & 1u) != 0;
+            data >>= 1; // after data bits, zero shifts in for the stop bit
+            --bit_cnt;
+
+            load_symbol_(
+                delay_to_carrier_cnt_(k_bit_mark_delay_),
+                is_one ? k_one_space_delay_ : k_zero_space_delay_
+            );
+        }
+
+        static void IRAM_ATTR load_symbol_(u32 mark_carrier_cnt_, u32 space_delay_) {
+            carrier_cnt = mark_carrier_cnt_;
+            space_delay = space_delay_;
+            state = State::symbol;
+        }
+
+        static u32 IRAM_ATTR idle_() {
+            tx_off_();
+            return wait_idle_();
+        }
+
+        static u32 IRAM_ATTR done_() {
+            tx_off_();
+            state = State::done;
+            return wait_idle_();
+        }
+
+        static u32 IRAM_ATTR schedule_(u32 now, u32 delay) {
+            const u32 wait_delay = timer_delay_(delay);
+            next_edge_at = now + wait_delay;
+            return wait_delay;
+        }
+
+        //----------------------------------------------------------------------
+        static u32 IRAM_ATTR now_cycles_() {
+            u32 cycles;
+            __asm__ __volatile__("rsr %0,ccount" : "=a"(cycles));
+            return cycles;
+        }
+
+        //----------------------------------------------------------------------
+        static u32 IRAM_ATTR timer_delay_(u32 delay) {
+            return max(delay, k_delay_min_);
+        }
+
+        static u32 IRAM_ATTR wait_idle_() {
+            next_edge_at = 0;
+            return k_delay_max_;
+        }
+
+        //----------------------------------------------------------------------
+        static void IRAM_ATTR tx_on_() {
+            if constexpr (IR_TX_ACTIVE_LOW) {
+                GPOC = k_tx_mask_;
+            } else {
+                GPOS = k_tx_mask_;
+            }
+        }
+
+        static void IRAM_ATTR tx_off_() {
+            if constexpr (IR_TX_ACTIVE_LOW) {
+                GPOS = k_tx_mask_;
+            } else {
+                GPOC = k_tx_mask_;
+            }
+        }
+    };
+
+
+    //--------------------------------------------------------------------------
+    TxEngine    tx_engine_;
 
 };

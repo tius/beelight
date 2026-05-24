@@ -45,7 +45,13 @@ public:
 
 //------------------------------------------------------------------------------
 private:
-    using TxPin = lite::gpio::Output<IR_TX_GPIO>;
+    using TxPin = lite::gpio::Output<
+        IR_TX_GPIO,
+        lite::gpio::OutputCfg{
+            .initial_on = false,
+            .active_lo  = IR_TX_ACTIVE_LOW,
+        }
+    >;
 
     static constexpr u16 k_bit_mark_us_      = 560;
     static constexpr u16 k_zero_space_us_    = 560;
@@ -56,7 +62,7 @@ private:
     TxPin tx_pin_{};
 
     void carrier_off_() {
-        tx_pin_.lo();
+        tx_off_();
     }
 
     void mark_(u16 mark_us) {
@@ -66,9 +72,9 @@ private:
 
         while (true) {
             noInterrupts();
-            tx_pin_.hi();
+            tx_on_();
             delayMicroseconds(k_carrier_on_us_);
-            tx_pin_.lo();
+            tx_off_();
             interrupts();
 
             period_end_us += k_carrier_period_us_;
@@ -87,5 +93,13 @@ private:
         if (space_us > 0) {
             delayMicroseconds(space_us);
         }
+    }
+
+    void tx_on_() {
+        tx_pin_.on();
+    }
+
+    void tx_off_() {
+        tx_pin_.off();
     }
 };

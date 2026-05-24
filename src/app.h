@@ -69,7 +69,7 @@ private:
     AccMeter            acc_meter_  {twi_, event_bus_};
     Infrared            infrared_   {event_bus_};
 
-    RgbLed              rgb_led_    {event_bus_};
+    RgbLed              rgb_led_    {};
     RgbShow             rgb_show_   {rgb_led_};
     lite::Cmd           cmd_led_    {shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led_)};
     Stripe              stripe_     {};

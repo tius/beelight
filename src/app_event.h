@@ -21,8 +21,6 @@ using lite::s16;
 struct AppEventId : public lite::fsm::EventId {
     enum : u8 {
         IR_RX           = lite::fsm::EventId::COUNT_,
-        PWM_SUSPEND,
-        PWM_RESUME,
         LIGHT_LUM,
         LIGHT_RGB,
         TEMP,
@@ -34,8 +32,6 @@ struct AppEventId : public lite::fsm::EventId {
     const char* str() const {
         switch (id) {
             case IR_RX:                 return "IR_RX";
-            case PWM_SUSPEND:           return "PWM_SUSPEND";
-            case PWM_RESUME:            return "PWM_RESUME";
             case LIGHT_LUM:             return "LIGHT_LUM";
             case LIGHT_RGB:             return "LIGHT_RGB";
             case TEMP:                  return "TEMP";
@@ -132,12 +128,6 @@ struct AppEvent {
     const char* fmt(char (&buffer)[N]) const {
         switch (id) {
             case Id::IR_RX:             return p1.ir_rx.fmt(buffer);
-            case Id::PWM_SUSPEND:
-                snprintf(buffer, N, "pwm_suspend");
-                return buffer;
-            case Id::PWM_RESUME:
-                snprintf(buffer, N, "pwm_resume");
-                return buffer;
             case Id::LIGHT_LUM:         return p1.light_lum.fmt(buffer);
             case Id::LIGHT_RGB:         return p1.light_rgb.fmt(buffer);
             case Id::TILT:              return p1.tilt.fmt(buffer);

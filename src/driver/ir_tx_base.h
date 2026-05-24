@@ -18,6 +18,13 @@ class IrTxBase : public lite::CrtpBase<Derived> {
 public:
     IrTxBase() noexcept = default;
 
+    bool is_ready() const noexcept {
+        return true;
+    }
+    void tick() {
+        //  default implementation does nothing
+    }
+
     void tx_nec(u8 addr, u8 cmd) {
         tx_raw(nec_to_raw(addr, cmd));
     }

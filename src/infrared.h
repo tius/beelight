@@ -28,8 +28,10 @@
 
 #if INFRARED_TX_DRIVER_NUM == INFRARED_TX_DRIVER_BIT_BANG
     #include "driver/ir_tx_bit_bang.h"
+    using IrTx = IrTxBitBang;
 #elif INFRARED_TX_DRIVER_NUM == INFRARED_TX_DRIVER_TIMER1
     #include "driver/ir_tx_timer1.h"
+    using IrTx = IrTxTimer1;
 #else
     #error unsupported INFRARED_TX_DRIVER
 #endif
@@ -74,6 +76,7 @@ public:
     }
 
     void tick() {
+        ir_tx_.tick();
         auto r = ir_rx_.read();
         if (!r.is_valid) {
             return;
@@ -91,11 +94,7 @@ public:
 //------------------------------------------------------------------------------    
 private:
     EventBus&   event_bus_;
-    #if INFRARED_TX_DRIVER_NUM == INFRARED_TX_DRIVER_BIT_BANG
-        IrTxBitBang ir_tx_;
-    #elif INFRARED_TX_DRIVER_NUM == INFRARED_TX_DRIVER_TIMER1
-        IrTxTimer1  ir_tx_ {event_bus_};
-    #endif
+    IrTx        ir_tx_;
     IrRx        ir_rx_;
     InfraredStatus status_ = { InfraredStatus::OK };
 
@@ -125,16 +124,24 @@ private:
 
     bool try_self_test_() {
         tx_nec_(0x12, 0x34);
+
+        while (!ir_tx_.is_ready()) {
+            ir_tx_.tick();
+        }
+ 
         delay(10);
         auto r = ir_rx_.read();
-        LOG_DEBUG("self test read: %02X.%02X %s", r.addr, r.cmd, r.is_repeat ? "r" : "");
+        if (r.is_valid) {
+            LOG_INFO("self test: received %02X.%02X %s", r.addr, r.cmd, r.is_repeat ? "r" : "");
+        } 
+        else {
+            LOG_INFO("self test: no signal");
+        }
         return r.is_valid && r.addr == 0x12 && r.cmd == 0x34;
     }
 
     void tx_nec_(u8 addr, u8 cmd) {
-        event_bus_.publish({ AppEvent::Id::PWM_SUSPEND });
         ir_tx_.tx_nec(addr, cmd);
-        event_bus_.publish({ AppEvent::Id::PWM_RESUME });
     }
 };
 

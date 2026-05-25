@@ -36,7 +36,7 @@ public:
 
 //------------------------------------------------------------------------------    
 private:
-	static constexpr u32 k_freq_hz_     = 1000;
+	static constexpr u32 k_freq_hz      = 1000;
 
 	Rgb8 		current_rgb_ = lite::k_rgb_black;
 
@@ -59,7 +59,7 @@ private:
 			lite::pwm::PwmCfg{
 				.initial_duty 	= 0,
 				.duty_max 		= k_duty_max,
-				.freq_hz 		= k_freq_hz_,
+				.freq_hz 		= k_freq_hz,
 				.active_lo 		= false,
 			}
 		> pwm_{};

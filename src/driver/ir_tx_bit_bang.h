@@ -25,21 +25,21 @@ public:
         space_(space_us);
 
         for (u8 bit_idx = 0; bit_idx < 32; ++bit_idx) {
-            mark_(k_bit_mark_us_);
+            mark_(BIT_MARK_US);
 
             const bool is_one = (raw_frame & 1u) != 0;
-            space_(is_one ? k_one_space_us_ : k_zero_space_us_);
+            space_(is_one ? ONE_SPACE_US : ZERO_SPACE_US);
             raw_frame >>= 1;
         }
 
-        mark_(k_bit_mark_us_);
+        mark_(BIT_MARK_US);
         carrier_off_();
     }
 
     void send_repeat_frame(u16 mark_us, u16 space_us) {
         mark_(mark_us);
         space_(space_us);
-        mark_(k_bit_mark_us_);
+        mark_(BIT_MARK_US);
         carrier_off_();
     }
 
@@ -53,11 +53,11 @@ private:
         }
     >;
 
-    static constexpr u16 k_bit_mark_us_      = 560;
-    static constexpr u16 k_zero_space_us_    = 560;
-    static constexpr u16 k_one_space_us_     = 1690;
-    static constexpr u16 k_carrier_period_us_ = 26;
-    static constexpr u16 k_carrier_on_us_     = 8;
+    static constexpr u16 BIT_MARK_US      = 560;
+    static constexpr u16 ZERO_SPACE_US    = 560;
+    static constexpr u16 ONE_SPACE_US     = 1690;
+    static constexpr u16 CARRIER_PERIOD_US = 26;
+    static constexpr u16 CARRIER_ON_US     = 8;
 
     TxPin tx_pin_{};
 
@@ -73,11 +73,11 @@ private:
         while (true) {
             noInterrupts();
             tx_on_();
-            delayMicroseconds(k_carrier_on_us_);
+            delayMicroseconds(CARRIER_ON_US);
             tx_off_();
             interrupts();
 
-            period_end_us += k_carrier_period_us_;
+            period_end_us += CARRIER_PERIOD_US;
 
             do {
                 now_us = micros();

@@ -25,20 +25,20 @@ public:
 		, timer_(MSG_THIS(on_timer_)) {
 		clr(lite::k_rgb_black);
 		update();
-		timer_.start_periodic(k_anim_step_);
+		timer_.start_periodic(k_anim_step);
 	}
 
 //------------------------------------------------------------------------------
 private:
-	static constexpr lite::duration_ms k_anim_step_ = lite::duration_ms{100};
-	static constexpr lite::u16 k_anim_steps_ = 50u;
+	static constexpr lite::duration_ms k_anim_step = lite::duration_ms{100};
+	static constexpr lite::u16 k_anim_steps = 50u;
 
 	lite::Timer timer_;
 	lite::u16 anim_step_idx_ = 0u;
 	lite::u16 anim_pixel_idx_ = 0u;
 
 	void on_timer_() {
-		if (anim_step_idx_ >= k_anim_steps_) {
+		if (anim_step_idx_ >= k_anim_steps) {
 			timer_.stop();
 			clr(lite::k_rgb_black);
 			update();

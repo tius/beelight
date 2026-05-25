@@ -1,6 +1,29 @@
 # to do - personal notes
 
+## stil
+- konstanten
+- struct vs class
+- interne methoden ohne suffix
+- namen
+- codepath
+- kommentare
+
+## app
+
+### ir rx
+- non-nec codes
+- codepfade optimieren
+
+### status rgb
+- boot-status sensoren via eventbus
+
+## build
+- tests build
+- release version
+- lto
+
 ## next steps
+- status led für fehler
 - button
 - rtcmem?
 
@@ -16,17 +39,14 @@
 - gpout via diode an esp8266 rst?
 
 ## breadboard
-- bma253
-- veml3328
-- high-side switch
+- high-side switch für vled
 - powerbee
 - mosfet für ir tx
 
 ## app
 
 acc meter
-- ausrichtung
-- rhythmus tanzen 
+- tanzen 
 
 esp-now
 - floor field
@@ -35,9 +55,6 @@ esp-now
 
 infrared
 - sync rhythm
-
-testmode
-- ir tx + rx
 
 power
 - power-up, power-down
@@ -68,6 +85,4 @@ ux
 - esp-now
 
 ## build
-- release version
-- lto
 

@@ -31,21 +31,21 @@ public:
 
     void tx_raw(
         u32 raw_frame, 
-        u16 header_mark_us = k_header_mark_us_, 
-        u16 header_space_us = k_header_space_us_
+        u16 header_mark_us = HEADER_MARK_US, 
+        u16 header_space_us = HEADER_SPACE_US
     ) {
         this->derived().send_data_frame(raw_frame, header_mark_us, header_space_us);
     }
 
     void tx_repeat() {
-        this->derived().send_repeat_frame(k_header_mark_us_, k_repeat_space_us_);
+        this->derived().send_repeat_frame(HEADER_MARK_US, REPEAT_SPACE_US);
     }
 
 //------------------------------------------------------------------------------    
 private:
-    static constexpr u16 k_header_mark_us_   = 9000;
-    static constexpr u16 k_header_space_us_  = 4500;
-    static constexpr u16 k_repeat_space_us_  = 2250;
+    static constexpr u16 HEADER_MARK_US   = 9000;
+    static constexpr u16 HEADER_SPACE_US  = 4500;
+    static constexpr u16 REPEAT_SPACE_US  = 2250;
 
     //--------------------------------------------------------------------------
     static u32 nec_to_raw(u8 addr, u8 cmd) {

@@ -93,7 +93,7 @@ public:
             u8      temp;
         } raw = {};
 
-        if (twi_.write_read(k_i2c_addr_, k_reg_acc_x_lsb_, raw).is_error()) {
+        if (twi_.write_read(I2C_ADDR, REG_ACC_X_LSB, raw).is_error()) {
             return { .read_state = { ReadStatus::ERR_DATA_READ } };
         }
 
@@ -111,36 +111,36 @@ private:
     lite::Twi&  twi_;
     DeviceStatus device_status_;
 
-    static constexpr u8 k_i2c_addr_        = 0x19;
-    static constexpr u8 k_reg_chip_id_     = 0x00;
-    static constexpr u8 k_reg_acc_x_lsb_   = 0x02;
-    static constexpr u8 k_reg_pmu_range_   = 0x0F;
-    static constexpr u8 k_reg_pmu_bw_      = 0x10;
+    static constexpr u8 I2C_ADDR        = 0x19;
+    static constexpr u8 REG_CHIP_ID     = 0x00;
+    static constexpr u8 REG_ACC_X_LSB   = 0x02;
+    static constexpr u8 REG_PMU_RANGE   = 0x0F;
+    static constexpr u8 REG_PMU_BW      = 0x10;
 
-    static constexpr u8 k_chip_id_         = 0xFA;
-    static constexpr u8 k_range_2g_        = 0x03;
-    static constexpr u8 k_bw_62_hz_        = 0x0B;
+    static constexpr u8 CHIP_ID         = 0xFA;
+    static constexpr u8 RANGE_2G        = 0x03;
+    static constexpr u8 BW_62_HZ        = 0x0B;
 
     //--------------------------------------------------------------------------
     DeviceStatus init_() {
         //  check for device presence on the bus
-        if ( twi_.probe(k_i2c_addr_).is_error() ) {
+        if ( twi_.probe(I2C_ADDR).is_error() ) {
             return { DeviceStatus::ERR_PROBE };
         }
 
         //  check id register for expected value
         u8 id = 0;
-        if (!read_reg_u8_(k_reg_chip_id_, id)) {
+        if (!read_reg_u8_(REG_CHIP_ID, id)) {
             return { DeviceStatus::ERR_ID_READ };
         }
 
-        if (id != k_chip_id_) {
+        if (id != CHIP_ID) {
             return { DeviceStatus::ERR_ID_VALUE };
         }
 
         if (
-            !write_reg_u8_(k_reg_pmu_range_, k_range_2g_)
-         || !write_reg_u8_(k_reg_pmu_bw_, k_bw_62_hz_)
+                !write_reg_u8_(REG_PMU_RANGE, RANGE_2G)
+            || !write_reg_u8_(REG_PMU_BW, BW_62_HZ)
         ) {
             return { DeviceStatus::ERR_CFG_WRITE };
         }
@@ -150,11 +150,11 @@ private:
 
     //--------------------------------------------------------------------------
     bool write_reg_u8_(u8 reg, u8 value) {
-        return twi_.write(k_i2c_addr_, reg, value).is_ok();
+        return twi_.write(I2C_ADDR, reg, value).is_ok();
     }
 
     bool read_reg_u8_(u8 reg, u8& value) {
-        return twi_.write_read(k_i2c_addr_, reg, value).is_ok();
+        return twi_.write_read(I2C_ADDR, reg, value).is_ok();
     }
 
     static s16 decode_axis_(u16 raw_word) {

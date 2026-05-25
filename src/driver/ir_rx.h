@@ -63,13 +63,13 @@ private:
             bit_space,
         };
 
-        static constexpr u32 k_header_mark_us_ = 9000;
-        static constexpr u32 k_header_space_us_ = 4500;
-        static constexpr u32 k_repeat_space_us_ = 2250;
-        static constexpr u32 k_bit_mark_us_ = 560;
-        static constexpr u32 k_zero_space_us_ = 560;
-        static constexpr u32 k_one_space_us_ = 1690;
-        static constexpr u8 k_data_bit_cnt_ = 32;
+        static constexpr u32 HEADER_MARK_US = 9000;
+        static constexpr u32 HEADER_SPACE_US = 4500;
+        static constexpr u32 REPEAT_SPACE_US = 2250;
+        static constexpr u32 BIT_MARK_US = 560;
+        static constexpr u32 ZERO_SPACE_US = 560;
+        static constexpr u32 ONE_SPACE_US = 1690;
+        static constexpr u8 DATA_BIT_CNT = 32;
 
         inline static volatile bool frame_ready = false;
         inline static volatile u8 frame_addr = 0;
@@ -126,20 +126,20 @@ private:
         static void IRAM_ATTR consume_mark_(u32 duration_us) {
             switch (state) {
                 case State::idle:
-                    if (matches_(duration_us, k_header_mark_us_)) {
+                    if (matches_(duration_us, HEADER_MARK_US)) {
                         state = State::header_space;
                     }
                     return;
 
                 case State::repeat_mark:
-                    if (matches_(duration_us, k_bit_mark_us_)) {
+                    if (matches_(duration_us, BIT_MARK_US)) {
                         publish_repeat_();
                     }
                     reset_();
                     return;
 
                 case State::bit_mark:
-                    if (matches_(duration_us, k_bit_mark_us_)) {
+                    if (matches_(duration_us, BIT_MARK_US)) {
                         state = State::bit_space;
                         return;
                     }
@@ -172,14 +172,14 @@ private:
         }
 
         static void IRAM_ATTR consume_header_space_(u32 duration_us) {
-            if (matches_(duration_us, k_header_space_us_)) {
+            if (matches_(duration_us, HEADER_SPACE_US)) {
                 data = 0;
                 bit_cnt = 0;
                 state = State::bit_mark;
                 return;
             }
 
-            if (matches_(duration_us, k_repeat_space_us_)) {
+            if (matches_(duration_us, REPEAT_SPACE_US)) {
                 state = State::repeat_mark;
                 return;
             }
@@ -188,12 +188,12 @@ private:
         }
 
         static void IRAM_ATTR consume_bit_space_(u32 duration_us) {
-            if (matches_(duration_us, k_zero_space_us_)) {
+            if (matches_(duration_us, ZERO_SPACE_US)) {
                 append_bit_(false);
                 return;
             }
 
-            if (matches_(duration_us, k_one_space_us_)) {
+            if (matches_(duration_us, ONE_SPACE_US)) {
                 append_bit_(true);
                 return;
             }
@@ -207,7 +207,7 @@ private:
             }
 
             ++bit_cnt;
-            if (bit_cnt == k_data_bit_cnt_) {
+            if (bit_cnt == DATA_BIT_CNT) {
                 publish_data_();
                 reset_();
                 return;

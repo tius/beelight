@@ -87,17 +87,17 @@ public:
         }
 
         u8 status = 0;
-        if (!read_reg_u8_(k_reg_status_, status)) {
+        if (!read_reg_u8_(REG_STATUS, status)) {
             return { .read_state = { ReadStatus::ERR_STATUS_READ } };
         }
 
-        if ((status & k_status_avalid_) == 0) {
+        if ((status & STATUS_AVALID) == 0) {
             return { .read_state = { ReadStatus::NOT_READY } };
         }
 
         u16 d[4];
         for (int i = 0; i < 4; i++) {
-            if (!read_reg_u16_(k_reg_cdatal_ + (i * 2u), d[i])) {
+            if (!read_reg_u16_(REG_CDATAL + (i * 2u), d[i])) {
                 return { .read_state = { ReadStatus::ERR_DATA_READ } };
             }
         }
@@ -111,7 +111,7 @@ public:
     }
 
     auto full_scale_counts() const noexcept {
-        return k_full_scale_counts_;
+        return FULL_SCALE_COUNTS;
     }
 
 //------------------------------------------------------------------------------    
@@ -120,46 +120,46 @@ private:
     DeviceStatus device_status_;
 
     //--------------------------------------------------------------------------
-    static constexpr u8 k_i2c_addr_         = 0x29;
-    static constexpr u8 k_cmd_bit_          = 0x80;
-    static constexpr u8 k_reg_enable_       = 0x00;
-    static constexpr u8 k_reg_atime_        = 0x01;
-    static constexpr u8 k_reg_control_      = 0x0F;
-    static constexpr u8 k_reg_id_           = 0x12;
-    static constexpr u8 k_reg_status_       = 0x13;
-    static constexpr u8 k_reg_cdatal_       = 0x14;
-    static constexpr u8 k_status_avalid_    = 0x01;
-    static constexpr u8 k_enable_pon_       = 0x01;
-    static constexpr u8 k_enable_aen_       = 0x02;
-    static constexpr u8 k_atime_100ms_      = 0xD5;
-    static constexpr u8 k_gain_4x_          = 0x01;
+    static constexpr u8 I2C_ADDR         = 0x29;
+    static constexpr u8 CMD_BIT          = 0x80;
+    static constexpr u8 REG_ENABLE       = 0x00;
+    static constexpr u8 REG_ATIME        = 0x01;
+    static constexpr u8 REG_CONTROL      = 0x0F;
+    static constexpr u8 REG_ID           = 0x12;
+    static constexpr u8 REG_STATUS       = 0x13;
+    static constexpr u8 REG_CDATAL       = 0x14;
+    static constexpr u8 STATUS_AVALID    = 0x01;
+    static constexpr u8 ENABLE_PON       = 0x01;
+    static constexpr u8 ENABLE_AEN       = 0x02;
+    static constexpr u8 ATIME_100MS      = 0xD5;
+    static constexpr u8 GAIN_4X          = 0x01;
 
     //  saturation model from sensor timing and adc width
-    static constexpr u32 k_analog_sat_per_cycle_ = 1024u;
-    static constexpr u32 k_digital_sat_     = 65535u;
+    static constexpr u32 ANALOG_SAT_PER_CYCLE = 1024u;
+    static constexpr u32 DIGITAL_SAT     = 65535u;
     //  integration cycles for the configured atime value
-    static constexpr u32 k_integration_cycles_ =
-        256u - static_cast<u32>(k_atime_100ms_);
+    static constexpr u32 INTEGRATION_CYCLES =
+        256u - static_cast<u32>(ATIME_100MS);
     //  analog saturation limit for the configured integration time
-    static constexpr u32 k_analog_sat_ =
-        k_integration_cycles_ * k_analog_sat_per_cycle_;
+    static constexpr u32 ANALOG_SAT =
+        INTEGRATION_CYCLES * ANALOG_SAT_PER_CYCLE;
     //  usable full scale is the lower of analog and digital saturation
-    static constexpr u32 k_full_scale_counts_ =
-        k_analog_sat_ < k_digital_sat_
-        ? k_analog_sat_
-        : k_digital_sat_
+    static constexpr u32 FULL_SCALE_COUNTS =
+        ANALOG_SAT < DIGITAL_SAT
+        ? ANALOG_SAT
+        : DIGITAL_SAT
     ;
 
     //--------------------------------------------------------------------------
     DeviceStatus init_() {
         //  check for device presence on the bus
-        if ( twi_.probe(k_i2c_addr_).is_error() ) {
+        if ( twi_.probe(I2C_ADDR).is_error() ) {
             return { DeviceStatus::ERR_PROBE };
         }
 
         //  check id register for expected value
         u8 id = 0;
-        if (!read_reg_u8_(k_reg_id_, id)) {
+        if (!read_reg_u8_(REG_ID, id)) {
             LOG_WARN("no id response");
             return { DeviceStatus::ERR_ID_READ };
         }
@@ -169,9 +169,9 @@ private:
         }
 
         if (
-            !write_reg_u8_(k_reg_atime_, k_atime_100ms_)
-         || !write_reg_u8_(k_reg_control_, k_gain_4x_)
-         || !write_reg_u8_(k_reg_enable_, k_enable_pon_)
+                !write_reg_u8_(REG_ATIME, ATIME_100MS)
+            || !write_reg_u8_(REG_CONTROL, GAIN_4X)
+            || !write_reg_u8_(REG_ENABLE, ENABLE_PON)
         ) {
             LOG_WARN("config failed");
             return { DeviceStatus::ERR_CFG_WRITE };
@@ -180,8 +180,8 @@ private:
         delay(3);
 
         if (!write_reg_u8_(
-            k_reg_enable_,
-            k_enable_pon_ | k_enable_aen_
+            REG_ENABLE,
+            ENABLE_PON | ENABLE_AEN
         )) {
             LOG_WARN("enable failed");
             return { DeviceStatus::ERR_ENABLE_WRITE };
@@ -191,19 +191,19 @@ private:
 
     //--------------------------------------------------------------------------
     bool write_reg_u8_(u8 reg, u8 value) {
-        const u8 cmd = static_cast<u8>(k_cmd_bit_ | reg);
-        return twi_.write(k_i2c_addr_, cmd, value).is_ok();
+        const u8 cmd = static_cast<u8>(CMD_BIT | reg);
+        return twi_.write(I2C_ADDR, cmd, value).is_ok();
     }
 
     bool read_reg_u8_(u8 reg, u8& value) {
-        const u8 cmd = static_cast<u8>(k_cmd_bit_ | reg);
-        return twi_.write_read(k_i2c_addr_, cmd, value).is_ok();
+        const u8 cmd = static_cast<u8>(CMD_BIT | reg);
+        return twi_.write_read(I2C_ADDR, cmd, value).is_ok();
     }
 
     bool read_reg_u16_(u8 reg, u16& value) {
-        const u8 cmd = static_cast<u8>(k_cmd_bit_ | reg);
+        const u8 cmd = static_cast<u8>(CMD_BIT | reg);
         lite::lh16 data;
-        if ( twi_.write_read( k_i2c_addr_, cmd, data ).is_error() ) {
+        if ( twi_.write_read( I2C_ADDR, cmd, data ).is_error() ) {
             return false;
         }
 

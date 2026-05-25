@@ -82,10 +82,10 @@ public:
         u16 y = 0;
 
         if (
-            !read_reg_u16_(k_reg_r_data_, r)
-         || !read_reg_u16_(k_reg_g_data_, g)
-         || !read_reg_u16_(k_reg_b_data_, b)
-         || !read_reg_u16_(k_reg_c_data_, y)
+                !read_reg_u16_(REG_R_DATA, r)
+            || !read_reg_u16_(REG_G_DATA, g)
+            || !read_reg_u16_(REG_B_DATA, b)
+            || !read_reg_u16_(REG_C_DATA, y)
         ) {
             return { .read_state = { ReadStatus::ERR_DATA_READ } };
         }
@@ -100,7 +100,7 @@ public:
     }
 
     auto full_scale_counts() const noexcept {
-        return k_full_scale_counts_;
+        return FULL_SCALE_COUNTS;
     }
 
 //------------------------------------------------------------------------------
@@ -108,23 +108,23 @@ private:
     lite::Twi& twi_;
     DeviceStatus device_status_;
 
-    static constexpr u8 k_i2c_addr_ = 0x10;
-    static constexpr u8 k_reg_conf_ = 0x00;
-    static constexpr u8 k_reg_r_data_ = 0x05;
-    static constexpr u8 k_reg_g_data_ = 0x06;
-    static constexpr u8 k_reg_b_data_ = 0x07;
-    static constexpr u8 k_reg_c_data_ = 0x04;
+    static constexpr u8 I2C_ADDR = 0x10;
+    static constexpr u8 REG_CONF = 0x00;
+    static constexpr u8 REG_R_DATA = 0x05;
+    static constexpr u8 REG_G_DATA = 0x06;
+    static constexpr u8 REG_B_DATA = 0x07;
+    static constexpr u8 REG_C_DATA = 0x04;
 
     //  keep default power-on configuration, with shutdown bit cleared
-    static constexpr u16 k_conf_default_active_ = 0x0000;
-    static constexpr u32 k_full_scale_counts_ = 65535u;
+    static constexpr u16 CONF_DEFAULT_ACTIVE = 0x0000;
+    static constexpr u32 FULL_SCALE_COUNTS = 65535u;
 
     DeviceStatus init_() {
-        if (twi_.probe(k_i2c_addr_).is_error()) {
+        if (twi_.probe(I2C_ADDR).is_error()) {
             return { DeviceStatus::ERR_PROBE };
         }
 
-        if (!write_reg_u16_(k_reg_conf_, k_conf_default_active_)) {
+        if (!write_reg_u16_(REG_CONF, CONF_DEFAULT_ACTIVE)) {
             LOG_WARN("config failed");
             return { DeviceStatus::ERR_CFG_WRITE };
         }
@@ -139,12 +139,12 @@ private:
             val.lo,
             val.hi,
         };
-        return twi_.write(k_i2c_addr_, frame, sizeof(frame)).is_ok();
+        return twi_.write(I2C_ADDR, frame, sizeof(frame)).is_ok();
     }
 
     bool read_reg_u16_(u8 reg, u16& value) {
         lite::lh16 data;
-        if (twi_.write_read(k_i2c_addr_, reg, data).is_error()) {
+        if (twi_.write_read(I2C_ADDR, reg, data).is_error()) {
             return false;
         }
 

@@ -101,7 +101,7 @@ private:
     lite::Timer timer_      { MSG_THIS(on_timer_) };
     u8          cnt_        = 0;;
 
-    static const u8 k_self_test_tries = 5;
+    static constexpr u8 k_self_test_tries = 5;
 
     void on_timer_() {
         if (++cnt_ == 20) {

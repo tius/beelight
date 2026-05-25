@@ -67,12 +67,12 @@ private:
     MeterStatus     device_status_;
     u8              roll_last_ = 128u;
 
-    static constexpr float k_rad_to_deg_ = 57.2957795131f;
-    static constexpr int k_g_counts_ = 256;
-    static constexpr int k_g_sq_ = k_g_counts_ * k_g_counts_;
-    static constexpr int k_norm_min_sq_ = (k_g_sq_ * 9) / 25;
-    static constexpr int k_norm_max_sq_ = (k_g_sq_ * 64) / 25;
-    static constexpr float k_roll_norm_min_ = 8.0f;
+    static constexpr float k_rad_to_deg = 57.2957795131f;
+    static constexpr int k_g_counts = 256;
+    static constexpr int k_g_sq = k_g_counts * k_g_counts;
+    static constexpr int k_norm_min_sq = (k_g_sq * 9) / 25;
+    static constexpr int k_norm_max_sq = (k_g_sq * 64) / 25;
+    static constexpr float k_roll_norm_min = 8.0f;
 
     //--------------------------------------------------------------------------
     void on_timer_() {
@@ -102,7 +102,7 @@ private:
 
         //  skip orientation update when acceleration norm is implausible
         const int norm_sq = (x_i * x_i) + (y_i * y_i) + (z_i * z_i);
-        if (norm_sq < k_norm_min_sq_ || norm_sq > k_norm_max_sq_) {
+        if (norm_sq < k_norm_min_sq || norm_sq > k_norm_max_sq) {
             LOG_DEBUG("acc norm out of range: n2=%d", norm_sq);
             return;
         }
@@ -112,13 +112,13 @@ private:
         const float z_f = static_cast<float>(z_i);
 
         const float yz_norm     = std::hypot(y_f, z_f);
-        const float pitch_deg   = std::atan2(x_f, yz_norm) * k_rad_to_deg_;
-        const float roll_deg    = std::atan2(y_f, z_f) * k_rad_to_deg_;
+        const float pitch_deg   = std::atan2(x_f, yz_norm) * k_rad_to_deg;
+        const float roll_deg    = std::atan2(y_f, z_f) * k_rad_to_deg;
 
         u8 pitch_u8 = map_angle_u8_(pitch_deg, -90.0f, 90.0f, 127u);
 
         //  keep last roll value near gimbal lock to avoid erratic changes
-        const bool roll_ok = yz_norm >= k_roll_norm_min_;
+        const bool roll_ok = yz_norm >= k_roll_norm_min;
         u8 roll_u8  = roll_last_;
         if (roll_ok) {
             roll_u8     = map_angle_u8_(roll_deg, -180.0f, 180.0f, 255u);

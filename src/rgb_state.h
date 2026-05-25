@@ -15,7 +15,7 @@ struct RgbState {
         OFF,
         CHARGE,
         TEST,
-        _COUNT
+        COUNT_
     };
     
     u8 id = 0;

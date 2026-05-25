@@ -89,34 +89,34 @@ private:
             done,
         };
 
-        static constexpr u32 k_tx_mask_ = 1u << IR_TX_GPIO;
+        static constexpr u32 TX_MASK = 1u << IR_TX_GPIO;
 
         //  38 khz carrier timing, about 31 % duty
-        static constexpr u16 k_carrier_on_us_      = 8;
-        static constexpr u16 k_carrier_off_us_     = 18;
+        static constexpr u16 CARRIER_ON_US      = 8;
+        static constexpr u16 CARRIER_OFF_US     = 18;
 
         //  nec timing
-        static constexpr u16 k_bit_mark_us_        = 560;
-        static constexpr u16 k_zero_space_us_      = 560;
-        static constexpr u16 k_one_space_us_       = 1690;
-        static constexpr u8  k_data_bit_cnt_       = 32;
+        static constexpr u16 BIT_MARK_US        = 560;
+        static constexpr u16 ZERO_SPACE_US      = 560;
+        static constexpr u16 ONE_SPACE_US       = 1690;
+        static constexpr u8  DATA_BIT_CNT       = 32;
 
         //  precomputed values for timer1 scheduling
-        static constexpr u32 k_carrier_on_delay_   = microsecondsToClockCycles(k_carrier_on_us_);
-        static constexpr u32 k_carrier_off_delay_  = microsecondsToClockCycles(k_carrier_off_us_);
-        static constexpr u32 k_carrier_period_     = k_carrier_on_delay_ + k_carrier_off_delay_;
+        static constexpr u32 CARRIER_ON_DELAY   = microsecondsToClockCycles(CARRIER_ON_US);
+        static constexpr u32 CARRIER_OFF_DELAY  = microsecondsToClockCycles(CARRIER_OFF_US);
+        static constexpr u32 CARRIER_PERIOD     = CARRIER_ON_DELAY + CARRIER_OFF_DELAY;
 
-        static constexpr u32 k_bit_mark_delay_     = microsecondsToClockCycles(k_bit_mark_us_);
-        static constexpr u32 k_zero_space_delay_   = microsecondsToClockCycles(k_zero_space_us_);
-        static constexpr u32 k_one_space_delay_    = microsecondsToClockCycles(k_one_space_us_);
+        static constexpr u32 BIT_MARK_DELAY     = microsecondsToClockCycles(BIT_MARK_US);
+        static constexpr u32 ZERO_SPACE_DELAY   = microsecondsToClockCycles(ZERO_SPACE_US);
+        static constexpr u32 ONE_SPACE_DELAY    = microsecondsToClockCycles(ONE_SPACE_US);
 
         //  timer 1 limits
-        static constexpr u32 k_delay_min_          = microsecondsToClockCycles(4);
-        static constexpr u32 k_delay_max_          = microsecondsToClockCycles(10000);
+        static constexpr u32 DELAY_MIN          = microsecondsToClockCycles(4);
+        static constexpr u32 DELAY_MAX          = microsecondsToClockCycles(10000);
 
         //  compute number of carrier edges for a given delay
         static constexpr u32 delay_to_carrier_cnt_(u32 delay) {
-            const u32 carrier_periods = lite::div_round_up(delay, k_carrier_period_);
+            const u32 carrier_periods = lite::div_round_up(delay, CARRIER_PERIOD);
             return carrier_periods * 2;
         }
 
@@ -142,7 +142,7 @@ private:
 
         //----------------------------------------------------------------------
         static void start(u32 raw_frame, u16 mark_us_, u16 space_us_) {
-            start_(raw_frame, mark_us_, space_us_, k_data_bit_cnt_);
+            start_(raw_frame, mark_us_, space_us_, DATA_BIT_CNT);
         }
 
         static void start_repeat(u16 mark_us_, u16 space_us_) {
@@ -213,11 +213,11 @@ private:
 
             if (edge_is_on) {
                 tx_on_();
-                return schedule_(now, k_carrier_on_delay_);
+                return schedule_(now, CARRIER_ON_DELAY);
             }
             else {
                 tx_off_();
-                return schedule_(now, k_carrier_off_delay_);
+                return schedule_(now, CARRIER_OFF_DELAY);
             }
         }
 
@@ -240,8 +240,8 @@ private:
             --bit_cnt;
 
             load_symbol_(
-                delay_to_carrier_cnt_(k_bit_mark_delay_),
-                is_one ? k_one_space_delay_ : k_zero_space_delay_
+                delay_to_carrier_cnt_(BIT_MARK_DELAY),
+                is_one ? ONE_SPACE_DELAY : ZERO_SPACE_DELAY
             );
         }
 
@@ -277,28 +277,28 @@ private:
 
         //----------------------------------------------------------------------
         static u32 IRAM_ATTR timer_delay_(u32 delay) {
-            return max(delay, k_delay_min_);
+            return max(delay, DELAY_MIN);
         }
 
         static u32 IRAM_ATTR wait_idle_() {
             next_edge_at = 0;
-            return k_delay_max_;
+            return DELAY_MAX;
         }
 
         //----------------------------------------------------------------------
         static void IRAM_ATTR tx_on_() {
             if constexpr (IR_TX_ACTIVE_LOW) {
-                GPOC = k_tx_mask_;
+                GPOC = TX_MASK;
             } else {
-                GPOS = k_tx_mask_;
+                GPOS = TX_MASK;
             }
         }
 
         static void IRAM_ATTR tx_off_() {
             if constexpr (IR_TX_ACTIVE_LOW) {
-                GPOS = k_tx_mask_;
+                GPOS = TX_MASK;
             } else {
-                GPOC = k_tx_mask_;
+                GPOC = TX_MASK;
             }
         }
     };

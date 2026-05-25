@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "ir_code.h"
+
 #include "lite/core/types.h"
 #include "lite/core/crtp.h"
 
@@ -25,8 +27,21 @@ public:
         //  default implementation does nothing
     }
 
+    void tx(IrCode code) {
+        if (code.is_invalid()) {
+            return;
+        }
+
+        if (code.is_repeat()) {
+            tx_repeat();
+            return;
+        }
+
+        tx_raw(code.raw());
+    }
+
     void tx_nec(u8 addr, u8 cmd) {
-        tx_raw(nec_to_raw(addr, cmd));
+        tx(IrCode::from_nec(addr, cmd));
     }
 
     void tx_raw(
@@ -46,15 +61,4 @@ private:
     static constexpr u16 HEADER_MARK_US   = 9000;
     static constexpr u16 HEADER_SPACE_US  = 4500;
     static constexpr u16 REPEAT_SPACE_US  = 2250;
-
-    //--------------------------------------------------------------------------
-    static u32 nec_to_raw(u8 addr, u8 cmd) {
-        const u8 addr_inv = ~addr;
-        const u8 cmd_inv = ~cmd;
-
-        return static_cast<u32>(addr)
-            | (static_cast<u32>(addr_inv) << 8)
-            | (static_cast<u32>(cmd) << 16)
-            | (static_cast<u32>(cmd_inv) << 24);
-    }
 };

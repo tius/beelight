@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "driver/ir_code.h"
+
 #include "lite/core/types.h"
 #include "lite/core/fsm.h"
 #include "lite/core/event_bus.h"
@@ -45,13 +47,27 @@ static_assert(sizeof(AppEventId) == 1, "unexpected size of AppEventId");
 
 //=============================================================================
 struct PayloadIrRx {
-    u8      addr;
-    u8      cmd;
-    bool    repeat;
+    IrCode code;
 
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
-        snprintf(buffer, N, "ir_rx %02X.%02X %s", addr, cmd, repeat ? "r" : "");
+        IrCode::Nec nec;
+        if (code.decode_nec(nec)) {
+            snprintf(buffer, N, "ir_rx %02X.%02X", nec.addr, nec.cmd);
+            return buffer;
+        }
+
+        if (code.is_repeat()) {
+            snprintf(buffer, N, "ir_rx repeat");
+            return buffer;
+        }
+
+        if (code.is_invalid()) {
+            snprintf(buffer, N, "ir_rx invalid");
+            return buffer;
+        }
+
+        snprintf(buffer, N, "ir_rx %08lX", static_cast<unsigned long>(code.raw()));
         return buffer;
     }
 };    
@@ -108,7 +124,7 @@ struct Payload {
     };
 };
 
-static_assert(sizeof(Payload) == 3, "unexpected size of Payload");
+static_assert(sizeof(Payload) == 4, "unexpected size of Payload");
 
 //=============================================================================
 struct AppEvent {
@@ -138,7 +154,7 @@ struct AppEvent {
     }
 };
 
-static_assert(sizeof(AppEvent) == 4, "unexpected size of AppEvent");
+static_assert(sizeof(AppEvent) == 5, "unexpected size of AppEvent");
 
 //=============================================================================
 #pragma pack(pop)

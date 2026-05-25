@@ -1,10 +1,24 @@
-//  manage ir receiver
+//  edge-driven ir receiver implementation
+//
+//  operation:
+//  - a change interrupt records every edge on the demodulated ir input
+//  - the edge-to-edge duration is classified by the current pin level
+//  - the isr runs the timing state machine and fills a single ready slot
+//  - foreground read() atomically copies and clears the ready slot
+//  - data frames accept any non-reserved 32-bit value with nec-like timing
+//  - repeat frames use nec repeat timing and publish IrCode::repeat()
+//
+//  static state:
+//  - attachInterrupt requires a plain isr entry without object context
+//  - static methods and data keep the isr path short and direct
+//  - this also means only one IrRxEdge instance can be active
 //
 //  see LICENSE file for terms
 
 #pragma once
 
 #include "settings.h"
+#include "ir_code.h"
 
 #include "lite/core/types.h"
 
@@ -15,21 +29,14 @@ using lite::u8;
 using lite::u32;
 
 //==============================================================================
-class IrRx {
+class IrRxEdge {
 //------------------------------------------------------------------------------    
 public:
-    IrRx() noexcept {
+    IrRxEdge() noexcept {
         Decoder::init();
     }
 
-    struct Result {
-        bool	is_valid;
-        u8		addr;
-        u8		cmd;
-        bool	is_repeat;
-    };
-
-    Result read() {
+    IrCode read() {
         return Decoder::read();
     }
 
@@ -43,11 +50,7 @@ private:
             noInterrupts();
             reset();
             frame_ready = false;
-            frame_addr = 0;
-            frame_cmd = 0;
-            frame_repeat = false;
-            last_addr = 0;
-            last_cmd = 0;
+            frame_raw = IrCode::k_invalid_raw;
             has_last_data = false;
             last_edge_us = micros();
             interrupts();
@@ -59,29 +62,22 @@ private:
             );
         }
 
-        static Result read() {
+        static IrCode read() {
             noInterrupts();
             const bool is_ready = frame_ready;
-            const u8 addr = frame_addr;
-            const u8 cmd = frame_cmd;
-            const bool is_repeat = frame_repeat;
+            const u32 raw = frame_raw;
             frame_ready = false;
             interrupts();
 
             if (!is_ready) {
-                return { .is_valid = false };
+                return IrCode::invalid();
             }
 
-            return {
-                .is_valid	= true,
-                .addr		= addr,
-                .cmd		= cmd,
-                .is_repeat	= is_repeat
-            };
+            return IrCode::from_raw(raw);
         }
 
     private:
-        static_assert(IR_RX_GPIO < 16, "IrRx supports only gpio 0..15");
+        static_assert(IR_RX_GPIO < 16, "IrRxEdge supports only gpio 0..15");
 
         enum class State : u8 {
             idle,
@@ -100,16 +96,12 @@ private:
         static constexpr u8 DATA_BIT_CNT = 32;
 
         inline static volatile bool frame_ready = false;
-        inline static volatile u8 frame_addr = 0;
-        inline static volatile u8 frame_cmd = 0;
-        inline static volatile bool frame_repeat = false;
+        inline static volatile u32 frame_raw = IrCode::k_invalid_raw;
 
         inline static u32 last_edge_us = 0;
         inline static u32 data = 0;
         inline static u8 bit_cnt = 0;
         inline static State state = State::idle;
-        inline static u8 last_addr = 0;
-        inline static u8 last_cmd = 0;
         inline static bool has_last_data = false;
 
         static void IRAM_ATTR on_edge() {
@@ -223,23 +215,12 @@ private:
         }
 
         static void IRAM_ATTR publish_data() {
-            const u8 addr = static_cast<u8>(data);
-            const u8 addr_inv = static_cast<u8>(data >> 8);
-            const u8 cmd = static_cast<u8>(data >> 16);
-            const u8 cmd_inv = static_cast<u8>(data >> 24);
-
-            if (static_cast<u8>(~addr) != addr_inv) {
+            if (!raw_is_data(data)) {
                 return;
             }
 
-            if (static_cast<u8>(~cmd) != cmd_inv) {
-                return;
-            }
-
-            last_addr = addr;
-            last_cmd = cmd;
             has_last_data = true;
-            publish(addr, cmd, false);
+            publish_raw(data);
         }
 
         static void IRAM_ATTR publish_repeat() {
@@ -247,14 +228,17 @@ private:
                 return;
             }
 
-            publish(last_addr, last_cmd, true);
+            publish_raw(IrCode::k_repeat_raw);
         }
 
-        static void IRAM_ATTR publish(u8 addr, u8 cmd, bool is_repeat) {
-            frame_addr = addr;
-            frame_cmd = cmd;
-            frame_repeat = is_repeat;
+        static void IRAM_ATTR publish_raw(u32 raw) {
+            frame_raw = raw;
             frame_ready = true;
+        }
+
+        static bool IRAM_ATTR raw_is_data(u32 raw) {
+            return raw != IrCode::k_invalid_raw
+                && raw != IrCode::k_repeat_raw;
         }
 
         static void IRAM_ATTR reset() {

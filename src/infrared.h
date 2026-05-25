@@ -6,7 +6,7 @@
 
 #include "app_event.h"
 #include "status.h"
-#include "driver/ir_rx.h"
+#include "driver/ir_rx_edge.h"
 
 #include "lite/io/log.h"
 #include "lite/core/event_bus.h"
@@ -35,6 +35,8 @@
 #else
     #error unsupported INFRARED_TX_DRIVER
 #endif
+
+using IrRx = IrRxEdge;
 
 //------------------------------------------------------------------------------
 #define LOG_TAG         ir
@@ -77,17 +79,15 @@ public:
 
     void tick() {
         ir_tx_.tick();
-        auto r = ir_rx_.read();
-        if (!r.is_valid) {
+        const IrCode code = ir_rx_.read();
+        if (code.is_invalid()) {
             return;
         }
 
-        LOG_INFO("ir_rx %02X.%02X %s", r.addr, r.cmd, r.is_repeat ? "r" : "");
+        log_code(code);
 
         event_bus_.publish({ AppEvent::Id::IR_RX, { .ir_rx = {
-            .addr   = r.addr,
-            .cmd    = r.cmd,
-            .repeat = r.is_repeat
+            .code = code
         }}} );
     }
 
@@ -108,10 +108,7 @@ private:
             timer_.stop();
         }
 
-        tx_nec(
-            0x0000,                     // address
-            cnt_ % 2 ? 0x0D : 0x1F      // command
-        ); 
+        tx(IrCode::from_nec(0x00, cnt_ % 2 ? 0x0D : 0x1F));
     }    
 
     void self_test() {
@@ -123,25 +120,42 @@ private:
     }
 
     bool try_self_test() {
-        tx_nec(0x12, 0x34);
+        tx(IrCode::from_nec(0x12, 0x34));
 
         while (!ir_tx_.is_ready()) {
             ir_tx_.tick();
         }
  
         delay(10);
-        auto r = ir_rx_.read();
-        if (r.is_valid) {
-            LOG_DEBUG("self test: received %02X.%02X %s", r.addr, r.cmd, r.is_repeat ? "r" : "");
+        const IrCode code = ir_rx_.read();
+        IrCode::Nec nec;
+        const bool is_nec = code.decode_nec(nec);
+        if (is_nec) {
+            LOG_DEBUG("self test: received %02X.%02X", nec.addr, nec.cmd);
         } 
         else {
             LOG_WARN("self test: no signal");
         }
-        return r.is_valid && r.addr == 0x12 && r.cmd == 0x34;
+        return is_nec && nec.addr == 0x12 && nec.cmd == 0x34;
     }
 
-    void tx_nec(u8 addr, u8 cmd) {
-        ir_tx_.tx_nec(addr, cmd);
+    void tx(IrCode code) {
+        ir_tx_.tx(code);
+    }
+
+    void log_code(IrCode code) {
+        IrCode::Nec nec;
+        if (code.decode_nec(nec)) {
+            LOG_INFO("ir_rx %02X.%02X", nec.addr, nec.cmd);
+            return;
+        }
+
+        if (code.is_repeat()) {
+            LOG_INFO("ir_rx repeat");
+            return;
+        }
+
+        LOG_INFO("ir_rx %08lX", static_cast<unsigned long>(code.raw()));
     }
 };
 

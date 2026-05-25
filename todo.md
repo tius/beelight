@@ -1,9 +1,8 @@
 # to do - personal notes
 
-### ir rx
-- struct für code
-- non-nec codes
+### ir 
 - codepfade optimieren
+- selftest 0x12345678
 
 ### status rgb
 - boot-status sensoren via eventbus

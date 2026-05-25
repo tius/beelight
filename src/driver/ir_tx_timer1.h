@@ -24,6 +24,11 @@
 //  - tick() sees done and runs cleanup from normal loop context
 //  - cleanup detaches timer1 and returns the engine to idle
 //
+//  static state:
+//  - setTimer1Callback requires a plain isr entry without object context
+//  - static methods and data keep the timer callback path short and direct
+//  - this also means only one IrTxTimer1 instance can be active
+//
 //  constraints:
 //  - direct GPOS/GPOC writes require gpio 0..15
 //  - use tx_on and tx_off so active-low hardware keeps semantic on/off

@@ -84,7 +84,7 @@ private:
             LOG_ERROR("acc meter not available: %s", acc_meter_.status().str());
         }
         if (!infrared_) {
-            LOG_ERROR("infrared not available: %s", infrared_.status().str());
+            LOG_ERROR("infrared not responding: %s", infrared_.status().str());
         }
 
         lite::std_out->println(APP_BANNER_TEXT);

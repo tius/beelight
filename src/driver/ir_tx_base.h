@@ -31,7 +31,7 @@ public:
 
     void tx_raw(
         u32 raw_frame, 
-        u16 header_mark_us = HEADER_MARK_US, 
+        u16 header_mark_us = HEADER_MARK_US,
         u16 header_space_us = HEADER_SPACE_US
     ) {
         this->derived().send_data_frame(raw_frame, header_mark_us, header_space_us);

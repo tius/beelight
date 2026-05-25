@@ -1,5 +1,6 @@
 # to do - personal notes
 
+- rtcmem?
 - button
 - ota
 
@@ -7,7 +8,7 @@
 ## next steps
 - status led für fehler
 - button
-- rtcmem?
+
 
 ### status rgb
 - boot-status sensoren via eventbus

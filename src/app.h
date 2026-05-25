@@ -16,6 +16,7 @@
 #include "lite/io/serial_out.h"
 #include "lite/io/log.h"
 #include "lite/sys/clock.h"
+#include "lite/sys/rtc_mem.h"
 #include "lite/core/event_bus.h"
 #include "lite/core/timer.h"
 #include "lite/cmd/sys_cmd.h"
@@ -47,6 +48,11 @@ public:
 
 //------------------------------------------------------------------------------
 private:
+    enum class RtcAddr : lite::u8 {
+        RTC_ALLOC(boot_count, RTC_WORDS(lite::u32)),
+        count,
+    };
+
     using AppLogger = lite::CustomLogger<LOG_ANSI_COLOR, LOG_TIMESTAMP, LOG_LEVEL_PREFIX>;
     using EventBus  = lite::EventBus<AppEvent>;
     
@@ -54,6 +60,7 @@ private:
     lite::SerialOut     serial_out_ {uart_, "\n-----\n"};
     lite::StdOut        std_out_    {serial_out_};
     AppLogger           logger_     {serial_out_};
+    lite::sys::RtcMem   rtc_mem_    {RTC_COUNT};
 
     lite::CmdShell      shell_      {};
     lite::Console       console_    {shell_, serial_out_};
@@ -77,6 +84,8 @@ private:
     lite::Timer         timer_      { MSG_THIS(on_timer) };
     
     App() {
+        update_boot_count();
+
         if (!light_meter_) {
             LOG_ERROR("light meter not available: %s", light_meter_.status().str());
         }
@@ -105,6 +114,14 @@ private:
     void on_cmd_led(lite::Out& out, lite::Args args) {
         (void)out;
         rgb_show_.set( args.get_u16() );
+    }
+
+    void update_boot_count() {
+        auto boot_count = rtc_mem_.read<lite::u32>(RTC_SLOT(boot_count));
+        ++boot_count;
+        rtc_mem_.write(RTC_SLOT(boot_count), boot_count);
+
+        LOG_INFO("boot count: %lu", static_cast<unsigned long>(boot_count));
     }
 
     void on_timer() {

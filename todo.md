@@ -1,8 +1,6 @@
 # to do - personal notes
 
 ## stil
-- konstanten
-- struct vs class
 - interne methoden ohne suffix
 - namen
 - codepath
@@ -11,6 +9,7 @@
 ## app
 
 ### ir rx
+- typ für code
 - non-nec codes
 - codepfade optimieren
 

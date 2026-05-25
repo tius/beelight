@@ -30,29 +30,57 @@ public:
     };
 
     Result read() {
-        noInterrupts();
-        const bool is_ready = Decoder::frame_ready;
-        const u8 addr = Decoder::frame_addr;
-        const u8 cmd = Decoder::frame_cmd;
-        const bool is_repeat = Decoder::frame_repeat;
-        Decoder::frame_ready = false;
-        interrupts();
-
-        if (!is_ready) {
-            return { .is_valid = false };
-        }
-
-        return {
-            .is_valid	= true,
-            .addr		= addr,
-            .cmd		= cmd,
-            .is_repeat	= is_repeat
-        };
+        return Decoder::read();
     }
 
 //------------------------------------------------------------------------------
 private:
-    struct Decoder {
+    class Decoder {
+    public:
+        static void init() {
+            pinMode(IR_RX_GPIO, INPUT_PULLUP);
+
+            noInterrupts();
+            reset_();
+            frame_ready = false;
+            frame_addr = 0;
+            frame_cmd = 0;
+            frame_repeat = false;
+            last_addr = 0;
+            last_cmd = 0;
+            has_last_data = false;
+            last_edge_us = micros();
+            interrupts();
+
+            attachInterrupt(
+                digitalPinToInterrupt(IR_RX_GPIO),
+                on_edge_,
+                CHANGE
+            );
+        }
+
+        static Result read() {
+            noInterrupts();
+            const bool is_ready = frame_ready;
+            const u8 addr = frame_addr;
+            const u8 cmd = frame_cmd;
+            const bool is_repeat = frame_repeat;
+            frame_ready = false;
+            interrupts();
+
+            if (!is_ready) {
+                return { .is_valid = false };
+            }
+
+            return {
+                .is_valid	= true,
+                .addr		= addr,
+                .cmd		= cmd,
+                .is_repeat	= is_repeat
+            };
+        }
+
+    private:
         static_assert(IR_RX_GPIO < 16, "IrRx supports only gpio 0..15");
 
         enum class State : u8 {
@@ -83,28 +111,6 @@ private:
         inline static u8 last_addr = 0;
         inline static u8 last_cmd = 0;
         inline static bool has_last_data = false;
-
-        static void init() {
-            pinMode(IR_RX_GPIO, INPUT_PULLUP);
-
-            noInterrupts();
-            reset_();
-            frame_ready = false;
-            frame_addr = 0;
-            frame_cmd = 0;
-            frame_repeat = false;
-            last_addr = 0;
-            last_cmd = 0;
-            has_last_data = false;
-            last_edge_us = micros();
-            interrupts();
-
-            attachInterrupt(
-                digitalPinToInterrupt(IR_RX_GPIO),
-                on_edge_,
-                CHANGE
-            );
-        }
 
         static void IRAM_ATTR on_edge_() {
             const u32 now_us = micros();

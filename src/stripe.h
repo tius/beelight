@@ -7,14 +7,14 @@
 #include "lite/io/log.h"
 #include "lite/core/timer.h"
 #include "lite/stripe/neo_pixel.h"
-#include "lite/stripe/mapping.h"
+#include "lite/stripe/map.h"
 
 #define LOG_TAG         stripe
 #define LOG_LEVEL       info
 
 using namespace lite::stripe;
 
-using StripeBase = Mapping::NEO_COLOR_ORDER<NeoPixel<NEO_GPIO>>;
+using StripeBase = map::NEO_COLOR_ORDER<NeoPixel<NEO_GPIO>>;
 
 //==============================================================================
 class Stripe : public StripeBase {

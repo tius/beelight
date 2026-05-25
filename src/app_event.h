@@ -8,7 +8,7 @@
 #include "lite/core/fsm.h"
 #include "lite/core/event_bus.h"
 
-class AppEvent;
+struct AppEvent;
 
 using lite::u8;
 using lite::u16;

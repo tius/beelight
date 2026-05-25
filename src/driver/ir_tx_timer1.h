@@ -80,7 +80,7 @@ public:
 
 //------------------------------------------------------------------------------
 private:
-    struct TxEngine {
+    class TxEngine {
         static_assert(IR_TX_GPIO < 16,  "IrTxTimer1 supports only gpio 0..15");
 
         enum class State : u8 {
@@ -131,6 +131,7 @@ private:
         inline static volatile State state = State::idle;
 
         //----------------------------------------------------------------------
+    public:
         void init() {
             tx_off_();
             pinMode(IR_TX_GPIO, OUTPUT);

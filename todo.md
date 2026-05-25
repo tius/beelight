@@ -1,9 +1,5 @@
 # to do - personal notes
 
-### ir 
-- codepfade optimieren
-- selftest 0x12345678
-
 ### status rgb
 - boot-status sensoren via eventbus
 

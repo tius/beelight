@@ -102,6 +102,7 @@ private:
     u8          cnt_        = 0;;
 
     static constexpr u8 k_self_test_tries = 5;
+    static constexpr u32 k_self_test_raw = 0x12345678u;
 
     void on_timer() {
         if (++cnt_ == 20) {
@@ -120,7 +121,7 @@ private:
     }
 
     bool try_self_test() {
-        tx(IrCode::from_nec(0x12, 0x34));
+        tx(IrCode::from_raw(k_self_test_raw));
 
         while (!ir_tx_.is_ready()) {
             ir_tx_.tick();
@@ -128,15 +129,17 @@ private:
  
         delay(10);
         const IrCode code = ir_rx_.read();
-        IrCode::Nec nec;
-        const bool is_nec = code.decode_nec(nec);
-        if (is_nec) {
-            LOG_DEBUG("self test: received %02X.%02X", nec.addr, nec.cmd);
-        } 
+        if (code.is_valid()) {
+            LOG_DEBUG(
+                "self test: received %08lX",
+                static_cast<unsigned long>(code.raw())
+            );
+        }
         else {
             LOG_WARN("self test: no signal");
         }
-        return is_nec && nec.addr == 0x12 && nec.cmd == 0x34;
+
+        return code.raw() == k_self_test_raw;
     }
 
     void tx(IrCode code) {

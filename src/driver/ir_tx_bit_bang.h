@@ -21,26 +21,26 @@ class IrTxBitBang : public IrTxBase<IrTxBitBang> {
 //------------------------------------------------------------------------------
 public:
     void send_data_frame(u32 raw_frame, u16 mark_us, u16 space_us) {
-        mark_(mark_us);
-        space_(space_us);
+        mark(mark_us);
+        space(space_us);
 
         for (u8 bit_idx = 0; bit_idx < 32; ++bit_idx) {
-            mark_(BIT_MARK_US);
+            mark(BIT_MARK_US);
 
             const bool is_one = (raw_frame & 1u) != 0;
-            space_(is_one ? ONE_SPACE_US : ZERO_SPACE_US);
+            space(is_one ? ONE_SPACE_US : ZERO_SPACE_US);
             raw_frame >>= 1;
         }
 
-        mark_(BIT_MARK_US);
-        carrier_off_();
+        mark(BIT_MARK_US);
+        carrier_off();
     }
 
     void send_repeat_frame(u16 mark_us, u16 space_us) {
-        mark_(mark_us);
-        space_(space_us);
-        mark_(BIT_MARK_US);
-        carrier_off_();
+        mark(mark_us);
+        space(space_us);
+        mark(BIT_MARK_US);
+        carrier_off();
     }
 
 //------------------------------------------------------------------------------
@@ -61,20 +61,20 @@ private:
 
     TxPin tx_pin_{};
 
-    void carrier_off_() {
-        tx_off_();
+    void carrier_off() {
+        tx_off();
     }
 
-    void mark_(u16 mark_us) {
+    void mark(u16 mark_us) {
         u32 now_us = micros();
         u32 period_end_us = now_us;
         const u32 mark_end_us = now_us + mark_us;
 
         while (true) {
             noInterrupts();
-            tx_on_();
+            tx_on();
             delayMicroseconds(CARRIER_ON_US);
-            tx_off_();
+            tx_off();
             interrupts();
 
             period_end_us += CARRIER_PERIOD_US;
@@ -88,18 +88,18 @@ private:
         }
     }
 
-    void space_(u16 space_us) {
-        carrier_off_();
+    void space(u16 space_us) {
+        carrier_off();
         if (space_us > 0) {
             delayMicroseconds(space_us);
         }
     }
 
-    void tx_on_() {
+    void tx_on() {
         tx_pin_.on();
     }
 
-    void tx_off_() {
+    void tx_off() {
         tx_pin_.off();
     }
 };

@@ -1,15 +1,7 @@
 # to do - personal notes
 
-## stil
-- interne methoden ohne suffix
-- namen
-- codepath
-- kommentare
-
-## app
-
 ### ir rx
-- typ für code
+- struct für code
 - non-nec codes
 - codepfade optimieren
 
@@ -77,11 +69,13 @@ ux
 - veml3328
 - powerbee
 
-## toolkit
+## litekit
 - check superloop load and latency
 - pixel dithering
 - rtcmem
 - esp-now
 
-## build
-
+## stil
+- namen
+- codepath
+- kommentare

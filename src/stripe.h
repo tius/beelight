@@ -22,7 +22,7 @@ class Stripe : public StripeBase {
 public:
 	Stripe()
 		: StripeBase(NEO_PIXEL_CNT)
-		, timer_(MSG_THIS(on_timer_)) {
+		, timer_(MSG_THIS(on_timer)) {
 		clr(lite::k_rgb_black);
 		update();
 		timer_.start_periodic(k_anim_step);
@@ -37,7 +37,7 @@ private:
 	lite::u16 anim_step_idx_ = 0u;
 	lite::u16 anim_pixel_idx_ = 0u;
 
-	void on_timer_() {
+	void on_timer() {
 		if (anim_step_idx_ >= k_anim_steps) {
 			timer_.stop();
 			clr(lite::k_rgb_black);

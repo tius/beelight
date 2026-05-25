@@ -70,7 +70,7 @@ public:
     explicit Bma253(lite::Twi& twi)
         : twi_(twi)
     {
-        device_status_ = init_();
+        device_status_ = init();
     }
 
     DeviceStatus status() const noexcept {
@@ -99,10 +99,10 @@ public:
 
         return {
             .read_state = { ReadStatus::OK },
-            .x = decode_axis_(raw.x),
-            .y = decode_axis_(raw.y),
-            .z = decode_axis_(raw.z),
-            .celsius10 = decode_temp_c10_(raw.temp),
+            .x = decode_axis(raw.x),
+            .y = decode_axis(raw.y),
+            .z = decode_axis(raw.z),
+            .celsius10 = decode_temp_c10(raw.temp),
         };
     }
 
@@ -122,7 +122,7 @@ private:
     static constexpr u8 BW_62_HZ        = 0x0B;
 
     //--------------------------------------------------------------------------
-    DeviceStatus init_() {
+    DeviceStatus init() {
         //  check for device presence on the bus
         if ( twi_.probe(I2C_ADDR).is_error() ) {
             return { DeviceStatus::ERR_PROBE };
@@ -130,7 +130,7 @@ private:
 
         //  check id register for expected value
         u8 id = 0;
-        if (!read_reg_u8_(REG_CHIP_ID, id)) {
+        if (!read_reg_u8(REG_CHIP_ID, id)) {
             return { DeviceStatus::ERR_ID_READ };
         }
 
@@ -139,8 +139,8 @@ private:
         }
 
         if (
-                !write_reg_u8_(REG_PMU_RANGE, RANGE_2G)
-            || !write_reg_u8_(REG_PMU_BW, BW_62_HZ)
+                !write_reg_u8(REG_PMU_RANGE, RANGE_2G)
+            || !write_reg_u8(REG_PMU_BW, BW_62_HZ)
         ) {
             return { DeviceStatus::ERR_CFG_WRITE };
         }
@@ -149,15 +149,15 @@ private:
     }
 
     //--------------------------------------------------------------------------
-    bool write_reg_u8_(u8 reg, u8 value) {
+    bool write_reg_u8(u8 reg, u8 value) {
         return twi_.write(I2C_ADDR, reg, value).is_ok();
     }
 
-    bool read_reg_u8_(u8 reg, u8& value) {
+    bool read_reg_u8(u8 reg, u8& value) {
         return twi_.write_read(I2C_ADDR, reg, value).is_ok();
     }
 
-    static s16 decode_axis_(u16 raw_word) {
+    static s16 decode_axis(u16 raw_word) {
         const u16 raw10 = static_cast<u16>((raw_word >> 6u) & 0x03FFu);
         if ((raw10 & 0x0200u) != 0u) {
             return static_cast<s16>(raw10 | 0xFC00u);
@@ -166,7 +166,7 @@ private:
     }
 
     //  bma253 temperature register: 0 -> 24.0 deg C, 1 lsb -> 0.5 deg C
-    static s16 decode_temp_c10_(u8 raw_temp) {
+    static s16 decode_temp_c10(u8 raw_temp) {
         const s16 raw_signed = static_cast<s8>(raw_temp);
         const s16 temp_x2 = static_cast<s16>(48 + raw_signed);
         return static_cast<s16>(temp_x2 * 5);

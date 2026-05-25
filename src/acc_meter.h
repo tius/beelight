@@ -39,7 +39,7 @@ public:
 
     AccMeter(lite::Twi& twi, EventBus& event_bus)
         : event_bus_(event_bus)
-        , timer_acc_(MSG_THIS(on_timer_))
+        , timer_acc_(MSG_THIS(on_timer))
         , acc_(twi)
     {
         if (acc_) {
@@ -75,7 +75,7 @@ private:
     static constexpr float k_roll_norm_min = 8.0f;
 
     //--------------------------------------------------------------------------
-    void on_timer_() {
+    void on_timer() {
         auto r = acc_.read_data();
         if (!r.read_state.is_ok()) return;
 
@@ -83,19 +83,19 @@ private:
             "x=%3d y=%6d z=%6d celsius10=%d",
             r.x, r.y, r.z, r.celsius10
         );
-        publish_temp_(r.celsius10);
-        publish_tilt_(r.x, r.y, r.z);
+        publish_temp(r.celsius10);
+        publish_tilt(r.x, r.y, r.z);
     }
 
     //--------------------------------------------------------------------------
-    void publish_temp_(s16 celsius10) {
+    void publish_temp(s16 celsius10) {
         event_bus_.publish({ AppEvent::Id::TEMP, { .temp = { 
             .celsius10 = celsius10 
         }}});
     }
 
     //--------------------------------------------------------------------------
-    void publish_tilt_(s16 x, s16 y, s16 z) {
+    void publish_tilt(s16 x, s16 y, s16 z) {
         const int x_i = static_cast<int>(x);
         const int y_i = static_cast<int>(y);
         const int z_i = static_cast<int>(z);
@@ -115,13 +115,13 @@ private:
         const float pitch_deg   = std::atan2(x_f, yz_norm) * k_rad_to_deg;
         const float roll_deg    = std::atan2(y_f, z_f) * k_rad_to_deg;
 
-        u8 pitch_u8 = map_angle_u8_(pitch_deg, -90.0f, 90.0f, 127u);
+        u8 pitch_u8 = map_angle_u8(pitch_deg, -90.0f, 90.0f, 127u);
 
         //  keep last roll value near gimbal lock to avoid erratic changes
         const bool roll_ok = yz_norm >= k_roll_norm_min;
         u8 roll_u8  = roll_last_;
         if (roll_ok) {
-            roll_u8     = map_angle_u8_(roll_deg, -180.0f, 180.0f, 255u);
+            roll_u8     = map_angle_u8(roll_deg, -180.0f, 180.0f, 255u);
             roll_last_  = roll_u8;
         }
         LOG_INFO("pitch=%u roll=%u", int(pitch_u8), int(roll_u8));
@@ -134,7 +134,7 @@ private:
 
 
     //  map degrees from [min_deg, max_deg] to [0, max_code]
-    static u8 map_angle_u8_(
+    static u8 map_angle_u8(
         float deg,
         float min_deg,
         float max_deg,

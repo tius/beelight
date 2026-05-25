@@ -67,7 +67,7 @@ public:
 
     LightMeter(lite::Twi& twi, EventBus& event_bus)
         : event_bus_(event_bus)
-        , timer_sensor_(MSG_THIS(on_timer_))
+        , timer_sensor_(MSG_THIS(on_timer))
         , sensor_(twi)
     {
         if (sensor_) {
@@ -94,24 +94,24 @@ private:
     MeterStatus    device_status_;
 
     //--------------------------------------------------------------------------
-    void on_timer_() {
+    void on_timer() {
         auto r = sensor_.read_data();
         if (!r.read_state.is_ok()) return;
 
         LOG_INFO("c=%05u r=%05u g=%05u b=%05u", r.y, r.r, r.g, r.b);
 
         event_bus_.publish({AppEventId::LIGHT_LUM, { .light_lum = { 
-            .y = raw_to_u8_(r.y)
+            .y = raw_to_u8(r.y)
         }}});
         event_bus_.publish({AppEventId::LIGHT_RGB, { .light_rgb = { 
-            .r = raw_to_u8_(r.r), 
-            .g = raw_to_u8_(r.g), 
-            .b = raw_to_u8_(r.b) 
+            .r = raw_to_u8(r.r),
+            .g = raw_to_u8(r.g),
+            .b = raw_to_u8(r.b)
         }}});
     }
 
     //--------------------------------------------------------------------------
-    u8 raw_to_u8_(u16 raw_count) {
+    u8 raw_to_u8(u16 raw_count) {
         auto counts = sensor_.full_scale_counts();
 
         const u32 clamped = std::min(static_cast<u32>(raw_count), counts);

@@ -73,12 +73,12 @@ public:
     void set(u8 state) noexcept {
         if ( !lite::changed(state_, state) ) return;
 
-        apply_state_(state_);
+        apply_state(state_);
     }
 
 //-----------------------------------------------------------------------------
 private:
-    void apply_state_(u8 state) noexcept {
+    void apply_state(u8 state) noexcept {
         morse_.off();
         switch (state) {
             case RgbState::OFF:     morse_.play("gI"); break;

@@ -71,10 +71,10 @@ private:
 
     RgbLed              rgb_led_    {};
     RgbShow             rgb_show_   {rgb_led_};
-    lite::Cmd           cmd_led_    {shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led_)};
+    lite::Cmd           cmd_led_    {shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led)};
     Stripe              stripe_     {};
 
-    lite::Timer         timer_      { MSG_THIS(on_timer_) };
+    lite::Timer         timer_      { MSG_THIS(on_timer) };
     
     App() {
         if (!light_meter_) {
@@ -102,12 +102,12 @@ private:
     App(const App&) = delete;
     App& operator=(const App&) = delete;
 
-    void on_cmd_led_(lite::Out& out, lite::Args args) {
+    void on_cmd_led(lite::Out& out, lite::Args args) {
         (void)out;
         rgb_show_.set( args.get_u16() );
     }
 
-    void on_timer_() {
+    void on_timer() {
         lite::sys::deep_sleep();
     }
 };

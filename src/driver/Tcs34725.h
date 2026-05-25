@@ -69,7 +69,7 @@ public:
     explicit Tcs34725(lite::Twi& twi)
         : twi_(twi)
     {
-        device_status_ = init_();
+        device_status_ = init();
     }
 
     auto status() const noexcept {
@@ -87,7 +87,7 @@ public:
         }
 
         u8 status = 0;
-        if (!read_reg_u8_(REG_STATUS, status)) {
+        if (!read_reg_u8(REG_STATUS, status)) {
             return { .read_state = { ReadStatus::ERR_STATUS_READ } };
         }
 
@@ -97,7 +97,7 @@ public:
 
         u16 d[4];
         for (int i = 0; i < 4; i++) {
-            if (!read_reg_u16_(REG_CDATAL + (i * 2u), d[i])) {
+            if (!read_reg_u16(REG_CDATAL + (i * 2u), d[i])) {
                 return { .read_state = { ReadStatus::ERR_DATA_READ } };
             }
         }
@@ -151,7 +151,7 @@ private:
     ;
 
     //--------------------------------------------------------------------------
-    DeviceStatus init_() {
+    DeviceStatus init() {
         //  check for device presence on the bus
         if ( twi_.probe(I2C_ADDR).is_error() ) {
             return { DeviceStatus::ERR_PROBE };
@@ -159,7 +159,7 @@ private:
 
         //  check id register for expected value
         u8 id = 0;
-        if (!read_reg_u8_(REG_ID, id)) {
+        if (!read_reg_u8(REG_ID, id)) {
             LOG_WARN("no id response");
             return { DeviceStatus::ERR_ID_READ };
         }
@@ -169,9 +169,9 @@ private:
         }
 
         if (
-                !write_reg_u8_(REG_ATIME, ATIME_100MS)
-            || !write_reg_u8_(REG_CONTROL, GAIN_4X)
-            || !write_reg_u8_(REG_ENABLE, ENABLE_PON)
+                !write_reg_u8(REG_ATIME, ATIME_100MS)
+            || !write_reg_u8(REG_CONTROL, GAIN_4X)
+            || !write_reg_u8(REG_ENABLE, ENABLE_PON)
         ) {
             LOG_WARN("config failed");
             return { DeviceStatus::ERR_CFG_WRITE };
@@ -179,7 +179,7 @@ private:
 
         delay(3);
 
-        if (!write_reg_u8_(
+        if (!write_reg_u8(
             REG_ENABLE,
             ENABLE_PON | ENABLE_AEN
         )) {
@@ -190,17 +190,17 @@ private:
     }
 
     //--------------------------------------------------------------------------
-    bool write_reg_u8_(u8 reg, u8 value) {
+    bool write_reg_u8(u8 reg, u8 value) {
         const u8 cmd = static_cast<u8>(CMD_BIT | reg);
         return twi_.write(I2C_ADDR, cmd, value).is_ok();
     }
 
-    bool read_reg_u8_(u8 reg, u8& value) {
+    bool read_reg_u8(u8 reg, u8& value) {
         const u8 cmd = static_cast<u8>(CMD_BIT | reg);
         return twi_.write_read(I2C_ADDR, cmd, value).is_ok();
     }
 
-    bool read_reg_u16_(u8 reg, u16& value) {
+    bool read_reg_u16(u8 reg, u16& value) {
         const u8 cmd = static_cast<u8>(CMD_BIT | reg);
         lite::lh16 data;
         if ( twi_.write_read( I2C_ADDR, cmd, data ).is_error() ) {

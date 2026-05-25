@@ -60,7 +60,7 @@ public:
     explicit Veml3328(lite::Twi& twi)
         : twi_(twi)
     {
-        device_status_ = init_();
+        device_status_ = init();
     }
 
     auto status() const noexcept {
@@ -82,10 +82,10 @@ public:
         u16 y = 0;
 
         if (
-                !read_reg_u16_(REG_R_DATA, r)
-            || !read_reg_u16_(REG_G_DATA, g)
-            || !read_reg_u16_(REG_B_DATA, b)
-            || !read_reg_u16_(REG_C_DATA, y)
+                !read_reg_u16(REG_R_DATA, r)
+            || !read_reg_u16(REG_G_DATA, g)
+            || !read_reg_u16(REG_B_DATA, b)
+            || !read_reg_u16(REG_C_DATA, y)
         ) {
             return { .read_state = { ReadStatus::ERR_DATA_READ } };
         }
@@ -119,12 +119,12 @@ private:
     static constexpr u16 CONF_DEFAULT_ACTIVE = 0x0000;
     static constexpr u32 FULL_SCALE_COUNTS = 65535u;
 
-    DeviceStatus init_() {
+    DeviceStatus init() {
         if (twi_.probe(I2C_ADDR).is_error()) {
             return { DeviceStatus::ERR_PROBE };
         }
 
-        if (!write_reg_u16_(REG_CONF, CONF_DEFAULT_ACTIVE)) {
+        if (!write_reg_u16(REG_CONF, CONF_DEFAULT_ACTIVE)) {
             LOG_WARN("config failed");
             return { DeviceStatus::ERR_CFG_WRITE };
         }
@@ -132,7 +132,7 @@ private:
         return { DeviceStatus::OK };
     }
 
-    bool write_reg_u16_(u8 reg, u16 value) {
+    bool write_reg_u16(u8 reg, u16 value) {
         lite::lh16 val{value};
         const u8 frame[] = {
             reg,
@@ -142,7 +142,7 @@ private:
         return twi_.write(I2C_ADDR, frame, sizeof(frame)).is_ok();
     }
 
-    bool read_reg_u16_(u8 reg, u16& value) {
+    bool read_reg_u16(u8 reg, u16& value) {
         lite::lh16 data;
         if (twi_.write_read(I2C_ADDR, reg, data).is_error()) {
             return false;

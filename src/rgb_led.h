@@ -31,7 +31,7 @@ public:
 
 	void set(const Rgb8& rgb) {
 		current_rgb_ = rgb;
-		apply_rgb_(current_rgb_);
+		apply_rgb(current_rgb_);
 	}
 
 //------------------------------------------------------------------------------    
@@ -40,7 +40,7 @@ private:
 
 	Rgb8 		current_rgb_ = lite::k_rgb_black;
 
-	void apply_rgb_(const Rgb8& rgb) {
+	void apply_rgb(const Rgb8& rgb) {
 		led_r_.set(rgb.r);
 		led_g_.set(rgb.g);
 		led_b_.set(rgb.b);

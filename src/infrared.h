@@ -63,7 +63,7 @@ public:
     explicit Infrared(EventBus& event_bus) noexcept
         : event_bus_(event_bus) 
     {
-        self_test_();
+        self_test();
         timer_.start_periodic(500ms);
     }
 
@@ -98,32 +98,32 @@ private:
     IrRx        ir_rx_;
     InfraredStatus status_ = { InfraredStatus::OK };
 
-    lite::Timer timer_      { MSG_THIS(on_timer_) };
+    lite::Timer timer_      { MSG_THIS(on_timer) };
     u8          cnt_        = 0;;
 
     static constexpr u8 k_self_test_tries = 5;
 
-    void on_timer_() {
+    void on_timer() {
         if (++cnt_ == 20) {
             timer_.stop();
         }
 
-        tx_nec_(
+        tx_nec(
             0x0000,                     // address
             cnt_ % 2 ? 0x0D : 0x1F      // command
         ); 
     }    
 
-    void self_test_() {
+    void self_test() {
         for (int i = 0; i < k_self_test_tries; ++i) {
-            if ( try_self_test_() ) return;
+            if ( try_self_test() ) return;
         }
         status_ = { InfraredStatus::SELFTEST_FAILED };
         LOG_ERROR("self test failed");
     }
 
-    bool try_self_test_() {
-        tx_nec_(0x12, 0x34);
+    bool try_self_test() {
+        tx_nec(0x12, 0x34);
 
         while (!ir_tx_.is_ready()) {
             ir_tx_.tick();
@@ -140,7 +140,7 @@ private:
         return r.is_valid && r.addr == 0x12 && r.cmd == 0x34;
     }
 
-    void tx_nec_(u8 addr, u8 cmd) {
+    void tx_nec(u8 addr, u8 cmd) {
         ir_tx_.tx_nec(addr, cmd);
     }
 };

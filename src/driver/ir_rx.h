@@ -41,7 +41,7 @@ private:
             pinMode(IR_RX_GPIO, INPUT_PULLUP);
 
             noInterrupts();
-            reset_();
+            reset();
             frame_ready = false;
             frame_addr = 0;
             frame_cmd = 0;
@@ -54,7 +54,7 @@ private:
 
             attachInterrupt(
                 digitalPinToInterrupt(IR_RX_GPIO),
-                on_edge_,
+                on_edge,
                 CHANGE
             );
         }
@@ -112,117 +112,117 @@ private:
         inline static u8 last_cmd = 0;
         inline static bool has_last_data = false;
 
-        static void IRAM_ATTR on_edge_() {
+        static void IRAM_ATTR on_edge() {
             const u32 now_us = micros();
             const u32 duration_us = now_us - last_edge_us;
             last_edge_us = now_us;
 
-            if (level_is_high_()) {
-                consume_mark_(duration_us);
+            if (level_is_high()) {
+                consume_mark(duration_us);
                 return;
             }
 
-            consume_space_(duration_us);
+            consume_space(duration_us);
         }
 
-        static bool IRAM_ATTR level_is_high_() {
+        static bool IRAM_ATTR level_is_high() {
             return GPIP(IR_RX_GPIO);
         }
 
-        static void IRAM_ATTR consume_mark_(u32 duration_us) {
+        static void IRAM_ATTR consume_mark(u32 duration_us) {
             switch (state) {
                 case State::idle:
-                    if (matches_(duration_us, HEADER_MARK_US)) {
+                    if (matches(duration_us, HEADER_MARK_US)) {
                         state = State::header_space;
                     }
                     return;
 
                 case State::repeat_mark:
-                    if (matches_(duration_us, BIT_MARK_US)) {
-                        publish_repeat_();
+                    if (matches(duration_us, BIT_MARK_US)) {
+                        publish_repeat();
                     }
-                    reset_();
+                    reset();
                     return;
 
                 case State::bit_mark:
-                    if (matches_(duration_us, BIT_MARK_US)) {
+                    if (matches(duration_us, BIT_MARK_US)) {
                         state = State::bit_space;
                         return;
                     }
-                    reset_();
+                    reset();
                     return;
 
                 default:
-                    reset_();
+                    reset();
                     return;
             }
         }
 
-        static void IRAM_ATTR consume_space_(u32 duration_us) {
+        static void IRAM_ATTR consume_space(u32 duration_us) {
             switch (state) {
                 case State::idle:
                     return;
 
                 case State::header_space:
-                    consume_header_space_(duration_us);
+                    consume_header_space(duration_us);
                     return;
 
                 case State::bit_space:
-                    consume_bit_space_(duration_us);
+                    consume_bit_space(duration_us);
                     return;
 
                 default:
-                    reset_();
+                    reset();
                     return;
             }
         }
 
-        static void IRAM_ATTR consume_header_space_(u32 duration_us) {
-            if (matches_(duration_us, HEADER_SPACE_US)) {
+        static void IRAM_ATTR consume_header_space(u32 duration_us) {
+            if (matches(duration_us, HEADER_SPACE_US)) {
                 data = 0;
                 bit_cnt = 0;
                 state = State::bit_mark;
                 return;
             }
 
-            if (matches_(duration_us, REPEAT_SPACE_US)) {
+            if (matches(duration_us, REPEAT_SPACE_US)) {
                 state = State::repeat_mark;
                 return;
             }
 
-            reset_();
+            reset();
         }
 
-        static void IRAM_ATTR consume_bit_space_(u32 duration_us) {
-            if (matches_(duration_us, ZERO_SPACE_US)) {
-                append_bit_(false);
+        static void IRAM_ATTR consume_bit_space(u32 duration_us) {
+            if (matches(duration_us, ZERO_SPACE_US)) {
+                append_bit(false);
                 return;
             }
 
-            if (matches_(duration_us, ONE_SPACE_US)) {
-                append_bit_(true);
+            if (matches(duration_us, ONE_SPACE_US)) {
+                append_bit(true);
                 return;
             }
 
-            reset_();
+            reset();
         }
 
-        static void IRAM_ATTR append_bit_(bool is_one) {
+        static void IRAM_ATTR append_bit(bool is_one) {
             if (is_one) {
                 data |= static_cast<u32>(1) << bit_cnt;
             }
 
             ++bit_cnt;
             if (bit_cnt == DATA_BIT_CNT) {
-                publish_data_();
-                reset_();
+                publish_data();
+                reset();
                 return;
             }
 
             state = State::bit_mark;
         }
 
-        static void IRAM_ATTR publish_data_() {
+        static void IRAM_ATTR publish_data() {
             const u8 addr = static_cast<u8>(data);
             const u8 addr_inv = static_cast<u8>(data >> 8);
             const u8 cmd = static_cast<u8>(data >> 16);
@@ -239,31 +239,31 @@ private:
             last_addr = addr;
             last_cmd = cmd;
             has_last_data = true;
-            publish_(addr, cmd, false);
+            publish(addr, cmd, false);
         }
 
-        static void IRAM_ATTR publish_repeat_() {
+        static void IRAM_ATTR publish_repeat() {
             if (!has_last_data) {
                 return;
             }
 
-            publish_(last_addr, last_cmd, true);
+            publish(last_addr, last_cmd, true);
         }
 
-        static void IRAM_ATTR publish_(u8 addr, u8 cmd, bool is_repeat) {
+        static void IRAM_ATTR publish(u8 addr, u8 cmd, bool is_repeat) {
             frame_addr = addr;
             frame_cmd = cmd;
             frame_repeat = is_repeat;
             frame_ready = true;
         }
 
-        static void IRAM_ATTR reset_() {
+        static void IRAM_ATTR reset() {
             data = 0;
             bit_cnt = 0;
             state = State::idle;
         }
 
-        static bool IRAM_ATTR matches_(u32 duration_us, u32 target_us) {
+        static bool IRAM_ATTR matches(u32 duration_us, u32 target_us) {
             const u32 tolerance_us = target_us / 3;
             return duration_us >= target_us - tolerance_us
                 && duration_us <= target_us + tolerance_us;

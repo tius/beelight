@@ -3,6 +3,7 @@
 //  see LICENSE file for terms
 
 #pragma once
+#include "build_info.h"
 #include "lite/core/macros.h"
 #include XINCLUDE(boards/,BOARD,.h)
 
@@ -12,10 +13,8 @@
 //  see build_info.h for build-time version string generation
 //------------------------------------------------------------------------------
 #define APP_NAME                beelight
-#define APP_VERSION             26.05
 
 #define APP_NAME_STR            XSTR(APP_NAME)
-#define APP_VERSION_STR         XSTR(APP_VERSION)
 #define APP_BANNER_TEXT         APP_NAME_STR " " APP_VERSION_STR
 
 //==============================================================================

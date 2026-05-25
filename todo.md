@@ -1,5 +1,14 @@
 # to do - personal notes
 
+- button
+- ota
+
+
+## next steps
+- status led für fehler
+- button
+- rtcmem?
+
 ### status rgb
 - boot-status sensoren via eventbus
 
@@ -7,11 +16,6 @@
 - tests build
 - release version
 - lto
-
-## next steps
-- status led für fehler
-- button
-- rtcmem?
 
 ## docs
 - gesamtstatus
@@ -61,7 +65,6 @@ ux
 - backside status
 
 ## driver
-- veml3328
 - powerbee
 
 ## litekit

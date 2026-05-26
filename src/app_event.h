@@ -22,7 +22,8 @@ using lite::s16;
 //=============================================================================
 struct AppEventId : public lite::fsm::EventId {
     enum : u8 {
-        IR_RX           = lite::fsm::EventId::COUNT_,
+        WAKE_INFO           = lite::fsm::EventId::COUNT_,
+        IR_RX,
         LIGHT_LUM,
         LIGHT_RGB,
         TEMP,
@@ -33,6 +34,7 @@ struct AppEventId : public lite::fsm::EventId {
 
     const char* str() const {
         switch (id) {
+            case WAKE_INFO:             return "WAKE_INFO";
             case IR_RX:                 return "IR_RX";
             case LIGHT_LUM:             return "LIGHT_LUM";
             case LIGHT_RGB:             return "LIGHT_RGB";
@@ -46,6 +48,23 @@ struct AppEventId : public lite::fsm::EventId {
 static_assert(sizeof(AppEventId) == 1, "unexpected size of AppEventId");
 
 //=============================================================================
+struct PayloadWakeInfo {
+    u16 prev_uptime;
+    u16 button_release_at;
+    
+    template <size_t N>
+    const char* fmt(char (&buffer)[N]) const {
+        snprintf(
+            buffer,
+            N,
+            "wake prev_uptime=%u button_release_at=%u",
+            prev_uptime,
+            button_release_at
+        );
+        return buffer;
+    }
+};
+
 struct PayloadIrRx {
     IrCode code;
 
@@ -116,6 +135,7 @@ struct PayloadTilt {
 //-----------------------------------------------------------------------------
 struct Payload {
     union {
+        PayloadWakeInfo         wake;
         PayloadIrRx         ir_rx;
         PayloadLightLum     light_lum;
         PayloadLightRgb     light_rgb;
@@ -143,6 +163,7 @@ struct AppEvent {
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
         switch (id) {
+            case Id::WAKE_INFO:              return p1.wake.fmt(buffer);
             case Id::IR_RX:             return p1.ir_rx.fmt(buffer);
             case Id::LIGHT_LUM:         return p1.light_lum.fmt(buffer);
             case Id::LIGHT_RGB:         return p1.light_rgb.fmt(buffer);

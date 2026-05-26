@@ -10,7 +10,7 @@
 #include "light_meter.h"
 #include "acc_meter.h"
 #include "event_logger.h"
-#include "wake_button.h"
+#include "wake_info.h"
 
 #include "lite/cli/cmd.h"
 #include "lite/cli/console.h"
@@ -49,26 +49,34 @@ public:
 
 //------------------------------------------------------------------------------
 private:
-    enum class RtcAddr : lite::u8 {
-        RTC_ALLOC(boot_count, lite::u32),
-        count,
-    };
-
     using AppLogger = lite::CustomLogger<LOG_ANSI_COLOR, LOG_TIMESTAMP, LOG_LEVEL_PREFIX>;
     using EventBus  = lite::EventBus<AppEvent>;
+    using RtcMem    = lite::sys::RtcMem;
+    template <typename X>
+    using RtcVar    = lite::sys::RtcVar<X>;
+
+    enum class RtcAddr : u8 {
+        RTC_ALLOC(wake_uptime, u32),
+        RTC_ALLOC(test, u32),
+        count,
+    };
+    EventBus            event_bus_  {};
+
+    RtcMem              rtc_mem_    {RTC_COUNT};
+    RtcVar<u32>         rtc_wake_uptime_{rtc_mem_, RTC_SLOT(wake_uptime)};
+    RtcVar<u32>         rtc_test_   {rtc_mem_, RTC_SLOT(test)};
+
+    WakeInfo            wake_info_  {rtc_wake_uptime_, event_bus_};
     
     lite::Uart          uart_       {MONITOR_SPEED};
     lite::SerialOut     serial_out_ {uart_, "\n-----\n"};
     lite::StdOut        std_out_    {serial_out_};
     AppLogger           logger_     {serial_out_};
-    lite::sys::RtcMem   rtc_mem_    {RTC_COUNT};
-    WakeButton          wake_button_ {event_bus_};
 
     lite::CmdShell      shell_      {};
     lite::Console       console_    {shell_, serial_out_};
     lite::cmd::SysCmd   cmd_sys_    {shell_};
 
-    EventBus            event_bus_  {};
     EventLogger         event_logger_{event_bus_};
 
     lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
@@ -119,9 +127,9 @@ private:
     }
 
     void update_boot_count() {
-        auto boot_count = rtc_mem_.read<lite::u32>(RTC_SLOT(boot_count));
+        auto boot_count = rtc_test_.get();
         ++boot_count;
-        rtc_mem_.write(RTC_SLOT(boot_count), boot_count);
+        rtc_test_ = boot_count;
 
         LOG_INFO("boot count: %lu", static_cast<unsigned long>(boot_count));
     }

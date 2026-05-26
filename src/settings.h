@@ -30,9 +30,10 @@
 #define EVENT_LOG               debug       // enable event logging
 
 //==============================================================================
-//  wake button settings
+//  wake info settings
 //------------------------------------------------------------------------------
-#define WAKE_BUTTON_GPIO        16          // pin number for wake button
+#define WAKE_INFO_LOG           none        // log level for wake button events
+#define WAKE_INFO_GPIO          16          // pin number for wake button
 
 //==============================================================================
 //  neo pixel settings

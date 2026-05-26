@@ -45,21 +45,25 @@ private:
     class Decoder {
     public:
         static void init() {
+            if (is_initialized) {
+                return;
+            }
+
             pinMode(IR_RX_GPIO, INPUT_PULLUP);
 
-            noInterrupts();
             reset();
             frame_ready = false;
             frame_raw = IrCode::k_invalid_raw;
             has_last_data = false;
             last_edge_us = micros();
-            interrupts();
 
             attachInterrupt(
                 digitalPinToInterrupt(IR_RX_GPIO),
                 on_edge,
                 CHANGE
             );
+
+            is_initialized = true;
         }
 
         static IrCode read() {
@@ -103,6 +107,7 @@ private:
         inline static u8 bit_cnt = 0;
         inline static State state = State::idle;
         inline static bool has_last_data = false;
+        inline static bool is_initialized = false;
 
         static void IRAM_ATTR on_edge() {
             const u32 now_us = micros();

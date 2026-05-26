@@ -34,6 +34,14 @@
 //------------------------------------------------------------------------------
 #define WAKE_INFO_LOG           none        // log level for wake button events
 #define WAKE_INFO_GPIO          16          // pin number for wake button
+#define WAKE_INFO_KEEP_ALIVE_MS 1500        // keep rtc uptime fresh after release
+
+//==============================================================================
+//  wake morse settings
+//------------------------------------------------------------------------------
+#define WAKE_MORSE_DOT_MAX_MS   250         // longest dot press duration
+#define WAKE_MORSE_CHAR_GAP_MS  500         // gap ending one morse character
+#define WAKE_MORSE_DONE_GAP_MS  1200        // gap ending the command
 
 //==============================================================================
 //  neo pixel settings

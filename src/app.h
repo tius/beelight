@@ -10,6 +10,7 @@
 #include "light_meter.h"
 #include "acc_meter.h"
 #include "event_logger.h"
+#include "wake_morse.h"
 #include "wake_info.h"
 
 #include "lite/cli/cmd.h"
@@ -36,6 +37,8 @@ public:
 	}    
 
 	void loop() {
+        wake_morse_.tick();
+
 		//  execute due timers
 		lite::Timer::spin( lite::now() );
 
@@ -57,6 +60,7 @@ private:
 
     enum class RtcAddr : u8 {
         RTC_ALLOC(wake_uptime, u32),
+        RTC_ALLOC(wake_morse, WakeMorseState),
         RTC_ALLOC(test, u32),
         count,
     };
@@ -64,9 +68,11 @@ private:
 
     RtcMem              rtc_mem_    {RTC_COUNT};
     RtcVar<u32>         rtc_wake_uptime_{rtc_mem_, RTC_SLOT(wake_uptime)};
+    RtcVar<WakeMorseState> rtc_wake_morse_{rtc_mem_, RTC_SLOT(wake_morse)};
     RtcVar<u32>         rtc_test_   {rtc_mem_, RTC_SLOT(test)};
 
-    WakeInfo            wake_info_  {rtc_wake_uptime_, event_bus_};
+    WakeMorse           wake_morse_ {rtc_wake_morse_, event_bus_};
+    WakeInfo<WakeMorse> wake_info_  {rtc_wake_uptime_, wake_morse_};
     
     lite::Uart          uart_       {MONITOR_SPEED};
     lite::SerialOut     serial_out_ {uart_, "\n-----\n"};

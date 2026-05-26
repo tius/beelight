@@ -4,10 +4,10 @@
 
 #pragma once
 
+#include "app_event.h"
 #include "lite/io/log.h"
 #include "lite/core/event_bus.h"
 #include "lite/core/bits.h"
-#include "app_event.h"
 
 #define LOG_TAG		event
 #define LOG_LEVEL	EVENT_LOG

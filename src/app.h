@@ -10,6 +10,7 @@
 #include "light_meter.h"
 #include "acc_meter.h"
 #include "event_logger.h"
+#include "wake_button.h"
 
 #include "lite/cli/cmd.h"
 #include "lite/cli/console.h"
@@ -49,7 +50,7 @@ public:
 //------------------------------------------------------------------------------
 private:
     enum class RtcAddr : lite::u8 {
-        RTC_ALLOC(boot_count, RTC_WORDS(lite::u32)),
+        RTC_ALLOC(boot_count, lite::u32),
         count,
     };
 
@@ -61,6 +62,7 @@ private:
     lite::StdOut        std_out_    {serial_out_};
     AppLogger           logger_     {serial_out_};
     lite::sys::RtcMem   rtc_mem_    {RTC_COUNT};
+    WakeButton          wake_button_ {event_bus_};
 
     lite::CmdShell      shell_      {};
     lite::Console       console_    {shell_, serial_out_};

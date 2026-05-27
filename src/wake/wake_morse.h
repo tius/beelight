@@ -10,13 +10,12 @@
 #pragma once
 
 #include "settings.h"
-#include "run_event.h"
+#include "event/event.h"
 #include "wake_info.h"
 
 #include "lite/effects/morse.h"
 #include "lite/sys/clock.h"
 #include "lite/sys/rtc_mem.h"
-#include "lite/core/event_bus.h"
 #include "lite/core/types.h"
 
 static_assert(
@@ -43,7 +42,7 @@ struct WakeMorseState {
 
 //=============================================================================
 class WakeMorse final {
-using EventBus = lite::EventBus<RunEvent>;
+using EventBus = event::Bus;
 using StateVar = lite::sys::RtcVar<WakeMorseState>;
 
 //-----------------------------------------------------------------------------
@@ -189,7 +188,7 @@ private:
     }
 
     void publish_command(const WakeMorseState& state) {
-        Payload payload {};
+        event::Payload payload {};
         payload.morse_cmd.len = state.char_count;
 
         for (lite::u8 idx = 0; idx < state.char_count; ++idx) {
@@ -197,6 +196,6 @@ private:
         }
 
         clear_state();
-        event_bus_.publish({ RunEvent::Id::MORSE_CMD, payload });
+        event_bus_.publish({ event::Id::MORSE_CMD, payload });
     }
 };

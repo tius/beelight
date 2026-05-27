@@ -6,6 +6,10 @@
 
 #include "lite/core/types.h"
 
-enum class BootMode : lite::u8 {
+namespace boot {
+
+enum class Mode : lite::u8 {
     app,
 };
+
+} // namespace boot

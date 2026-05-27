@@ -7,7 +7,7 @@
 #include <variant>
 
 #include "app_run.h"
-#include "boot_mode.h"
+#include "boot/selector.h"
 
 //=============================================================================
 class RunHost final {
@@ -19,10 +19,10 @@ public:
     }
 
     void setup() {
-        auto mode = select_boot_mode();
+        auto mode = boot::select_mode();
 
         switch (mode) {
-            case BootMode::app:
+            case boot::Mode::app:
                 run_.emplace<AppRun>();
                 return;
         }
@@ -51,8 +51,4 @@ private:
 
     RunHost(const RunHost&) = delete;
     RunHost& operator=(const RunHost&) = delete;
-
-    static constexpr BootMode select_boot_mode() noexcept {
-        return BootMode::app;
-    }
 };

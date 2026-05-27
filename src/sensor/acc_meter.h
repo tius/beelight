@@ -6,10 +6,9 @@
 #include <cmath>
 
 #include "status.h"
-#include "run_event.h"
+#include "event/event.h"
 #include "driver/bma253.h"
 
-#include "lite/core/event_bus.h"
 #include "lite/io/log.h"
 #include "lite/sys/twi.h"
 #include "lite/core/timer.h"
@@ -20,7 +19,7 @@
 //==============================================================================
 class AccMeter {
 //------------------------------------------------------------------------------    
-using EventBus = lite::EventBus<RunEvent>;
+using EventBus = event::Bus;
 
 public:
     struct MeterStatus : public Status {
@@ -89,7 +88,7 @@ private:
 
     //--------------------------------------------------------------------------
     void publish_temp(s16 celsius10) {
-        event_bus_.publish({ RunEvent::Id::TEMP, { .temp = { 
+        event_bus_.publish({ event::Id::TEMP, { .temp = { 
             .celsius10 = celsius10 
         }}});
     }
@@ -126,7 +125,7 @@ private:
         }
         LOG_INFO("pitch=%u roll=%u", int(pitch_u8), int(roll_u8));
 
-        event_bus_.publish({ RunEvent::Id::TILT, { .tilt = {
+        event_bus_.publish({ event::Id::TILT, { .tilt = {
             .pitch  = pitch_u8,
             .roll   = roll_u8
         }}});

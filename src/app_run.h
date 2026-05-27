@@ -5,15 +5,15 @@
 #pragma once
 
 #include "settings.h"
-#include "run_event.h"
-#include "rgb_show.h"
-#include "stripe.h"
-#include "infrared.h"
-#include "light_meter.h"
-#include "acc_meter.h"
-#include "event_logger.h"
-#include "wake_morse.h"
-#include "wake_info.h"
+#include "event/event.h"
+#include "event/logger.h"
+#include "status_led/rgb_show.h"
+#include "front_leds/stripe.h"
+#include "ir/infrared.h"
+#include "sensor/light_meter.h"
+#include "sensor/acc_meter.h"
+#include "wake/wake_morse.h"
+#include "wake/wake_info.h"
 
 #include "lite/cli/cmd.h"
 #include "lite/cli/console.h"
@@ -21,7 +21,6 @@
 #include "lite/io/log.h"
 #include "lite/sys/clock.h"
 #include "lite/sys/rtc_mem.h"
-#include "lite/core/event_bus.h"
 #include "lite/core/timer.h"
 #include "lite/cmd/sys_cmd.h"
 #include "lite/cmd/twi_cmd.h"
@@ -78,7 +77,7 @@ public:
 //------------------------------------------------------------------------------
 private:
     using AppLogger = lite::CustomLogger<LOG_ANSI_COLOR, LOG_TIMESTAMP, LOG_LEVEL_PREFIX>;
-    using EventBus  = lite::EventBus<RunEvent>;
+    using EventBus  = event::Bus;
     using RtcMem    = lite::sys::RtcMem;
     template <typename X>
     using RtcVar    = lite::sys::RtcVar<X>;
@@ -108,7 +107,7 @@ private:
     lite::Console       console_    {shell_, serial_out_};
     lite::cmd::SysCmd   cmd_sys_    {shell_};
 
-    EventLogger         event_logger_{event_bus_};
+    event::Logger       event_logger_{event_bus_};
 
     lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
     lite::cmd::TwiCmd   twi_cmd_    {shell_, twi_};

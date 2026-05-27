@@ -4,12 +4,11 @@
 
 #pragma once
 
-#include "run_event.h"
+#include "event/event.h"
 #include "status.h"
 #include "driver/ir_rx_edge.h"
 
 #include "lite/io/log.h"
-#include "lite/core/event_bus.h"
 #include "lite/core/timer.h"
 
 //==============================================================================
@@ -45,7 +44,7 @@ using IrRx = IrRxEdge;
 //==============================================================================
 class Infrared {
 //------------------------------------------------------------------------------    
-using EventBus = lite::EventBus<RunEvent>;
+using EventBus = event::Bus;
 
 public:
     struct InfraredStatus : public Status {
@@ -86,7 +85,7 @@ public:
 
         log_code(code);
 
-        event_bus_.publish({ RunEvent::Id::IR_RX, { .ir_rx = {
+        event_bus_.publish({ event::Id::IR_RX, { .ir_rx = {
             .code = code
         }}} );
     }

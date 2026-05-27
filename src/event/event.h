@@ -10,7 +10,9 @@
 #include "lite/core/fsm.h"
 #include "lite/core/event_bus.h"
 
-struct RunEvent;
+namespace event {
+
+struct Event;
 
 using lite::u8;
 using lite::u16;
@@ -20,7 +22,7 @@ using lite::s16;
 #pragma pack(push, 1)
 
 //=============================================================================
-struct RunEventId : public lite::fsm::EventId {
+struct Id : public lite::fsm::EventId {
     enum : u8 {
         MORSE_CMD           = lite::fsm::EventId::COUNT_,
         IR_RX,
@@ -30,7 +32,7 @@ struct RunEventId : public lite::fsm::EventId {
         TILT,
     };
 
-    using EventId::EventId; // inherit constructors
+    using lite::fsm::EventId::EventId;
 
     const char* str() const {
         switch (id) {
@@ -45,10 +47,10 @@ struct RunEventId : public lite::fsm::EventId {
     }
 };
 
-static_assert(sizeof(RunEventId) == 1, "unexpected size of RunEventId");
+static_assert(sizeof(Id) == 1, "unexpected size of event::Id");
 
 //=============================================================================
-struct PayloadMorseCmd {
+struct MorseCmd {
     char text[3];
     u8 len;
 
@@ -65,7 +67,7 @@ struct PayloadMorseCmd {
     }
 };
 
-struct PayloadIrRx {
+struct IrRx {
     IrCode code;
 
     template <size_t N>
@@ -91,7 +93,7 @@ struct PayloadIrRx {
     }
 };    
 
-struct PayloadLightLum {
+struct LightLum {
     u8      y;
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
@@ -100,7 +102,7 @@ struct PayloadLightLum {
     }
 };
 
-struct PayloadLightRgb {
+struct LightRgb {
     u8      r;
     u8      g;
     u8      b;
@@ -111,7 +113,7 @@ struct PayloadLightRgb {
     }
 };
 
-struct PayloadTemp {
+struct Temp {
     s16 celsius10;
 
     template <size_t N>
@@ -121,7 +123,7 @@ struct PayloadTemp {
     }
 };
 
-struct PayloadTilt {
+struct Tilt {
     u8 pitch;
     u8 roll;
 
@@ -135,20 +137,20 @@ struct PayloadTilt {
 //-----------------------------------------------------------------------------
 struct Payload {
     union {
-        PayloadMorseCmd     morse_cmd;
-        PayloadIrRx         ir_rx;
-        PayloadLightLum     light_lum;
-        PayloadLightRgb     light_rgb;
-        PayloadTilt      tilt;
-        PayloadTemp         temp;
+        MorseCmd            morse_cmd;
+        IrRx                ir_rx;
+        LightLum            light_lum;
+        LightRgb            light_rgb;
+        Tilt                tilt;
+        Temp                temp;
     };
 };
 
 static_assert(sizeof(Payload) == 4, "unexpected size of Payload");
 
 //=============================================================================
-struct RunEvent {
-    using Id = RunEventId;
+struct Event {
+    using Id = event::Id;
 
     Id      id = Id::NONE;
     Payload p1 = {};    
@@ -157,8 +159,8 @@ struct RunEvent {
 		return id != Id::NONE;
 	}
 
-    RunEvent() = default;
-    RunEvent(int id, Payload p1 = {}) : id(id), p1(p1) {}
+    Event() = default;
+    Event(int id, Payload p1 = {}) : id(id), p1(p1) {}
 
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
@@ -175,7 +177,12 @@ struct RunEvent {
     }
 };
 
-static_assert(sizeof(RunEvent) == 5, "unexpected size of RunEvent");
+static_assert(sizeof(Event) == 5, "unexpected size of event::Event");
 
 //=============================================================================
 #pragma pack(pop)
+
+using Bus = lite::EventBus<Event>;
+using Hook = lite::EventHook<Event>;
+
+} // namespace event

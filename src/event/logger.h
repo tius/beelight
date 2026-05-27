@@ -1,38 +1,40 @@
 //  log events for debugging and testing
 //
-//  see LiCENSE file for terms
+//  see LICENSE file for terms
 
 #pragma once
 
-#include "run_event.h"
+#include "settings.h"
+#include "event/event.h"
+
 #include "lite/io/log.h"
-#include "lite/core/event_bus.h"
 #include "lite/core/bits.h"
 
 #define LOG_TAG		event
 #define LOG_LEVEL	EVENT_LOG
 
+namespace event {
+
 //=============================================================================
-class EventLogger final {
-//-----------------------------------------------------------------------------
-using EventBus = lite::EventBus<RunEvent>;
-using EventHook = lite::EventHook<RunEvent>;
+class Logger final {
 //-----------------------------------------------------------------------------
 public:
-    EventLogger(EventBus& event_bus) noexcept
-    : event_hook_(event_bus, METHOD_THIS(on_event)) {}
+    Logger(Bus& bus) noexcept
+    : hook_(bus, METHOD_THIS(on_event)) {}
 
 //-----------------------------------------------------------------------------
 private:
 
-    EventHook event_hook_;
+    Hook hook_;
 
     // log all events as they are published
-    void on_event(const RunEvent& event) {
+    void on_event(const Event& event) {
         char buffer[128];
         LOG_DEBUG("%s", event.fmt(buffer));
     }
 };
+
+} // namespace event
 
 //=============================================================================
 #undef LOG_TAG

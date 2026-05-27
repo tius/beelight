@@ -6,15 +6,15 @@
     #error use platformio test for LITEKIT_TESTS environments
 #endif
 
-#include "app.h"
+#include "run_host.h"
 
 //==============================================================================
 //  public arduino sketch entry points
 //------------------------------------------------------------------------------
 void setup() {
-    App::instance();
+    RunHost::instance().setup();
 }
 
 void loop() {
-    App::instance().loop();
+    RunHost::instance().loop();
 }

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "app_event.h"
+#include "run_event.h"
 #include "lite/io/log.h"
 #include "lite/core/event_bus.h"
 #include "lite/core/bits.h"
@@ -15,8 +15,8 @@
 //=============================================================================
 class EventLogger final {
 //-----------------------------------------------------------------------------
-using EventBus = lite::EventBus<AppEvent>;
-using EventHook = lite::EventHook<AppEvent>;
+using EventBus = lite::EventBus<RunEvent>;
+using EventHook = lite::EventHook<RunEvent>;
 //-----------------------------------------------------------------------------
 public:
     EventLogger(EventBus& event_bus) noexcept
@@ -28,7 +28,7 @@ private:
     EventHook event_hook_;
 
     // log all events as they are published
-    void on_event(const AppEvent& event) {
+    void on_event(const RunEvent& event) {
         char buffer[128];
         LOG_DEBUG("%s", event.fmt(buffer));
     }

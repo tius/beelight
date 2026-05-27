@@ -1,4 +1,4 @@
-//  application event definitions
+//  runtime event definitions
 //
 //  see LICENSE file for terms
 
@@ -10,7 +10,7 @@
 #include "lite/core/fsm.h"
 #include "lite/core/event_bus.h"
 
-struct AppEvent;
+struct RunEvent;
 
 using lite::u8;
 using lite::u16;
@@ -20,7 +20,7 @@ using lite::s16;
 #pragma pack(push, 1)
 
 //=============================================================================
-struct AppEventId : public lite::fsm::EventId {
+struct RunEventId : public lite::fsm::EventId {
     enum : u8 {
         MORSE_CMD           = lite::fsm::EventId::COUNT_,
         IR_RX,
@@ -45,7 +45,7 @@ struct AppEventId : public lite::fsm::EventId {
     }
 };
 
-static_assert(sizeof(AppEventId) == 1, "unexpected size of AppEventId");
+static_assert(sizeof(RunEventId) == 1, "unexpected size of RunEventId");
 
 //=============================================================================
 struct PayloadMorseCmd {
@@ -147,8 +147,8 @@ struct Payload {
 static_assert(sizeof(Payload) == 4, "unexpected size of Payload");
 
 //=============================================================================
-struct AppEvent {
-    using Id = AppEventId;
+struct RunEvent {
+    using Id = RunEventId;
 
     Id      id = Id::NONE;
     Payload p1 = {};    
@@ -157,8 +157,8 @@ struct AppEvent {
 		return id != Id::NONE;
 	}
 
-    AppEvent() = default;
-    AppEvent(int id, Payload p1 = {}) : id(id), p1(p1) {}
+    RunEvent() = default;
+    RunEvent(int id, Payload p1 = {}) : id(id), p1(p1) {}
 
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
@@ -175,7 +175,7 @@ struct AppEvent {
     }
 };
 
-static_assert(sizeof(AppEvent) == 5, "unexpected size of AppEvent");
+static_assert(sizeof(RunEvent) == 5, "unexpected size of RunEvent");
 
 //=============================================================================
 #pragma pack(pop)

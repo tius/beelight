@@ -1,7 +1,5 @@
 # to do - personal notes
-
-- rtcmem?
-- button
+- ap / station / wps
 - ota
 
 

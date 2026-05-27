@@ -4,7 +4,7 @@
 
 #pragma once
 #include "status.h"
-#include "app_event.h"
+#include "run_event.h"
 
 #include "lite/color/gamma_lut.h"
 #include "lite/core/event_bus.h"
@@ -41,7 +41,7 @@
 //==============================================================================
 class LightMeter {
 //------------------------------------------------------------------------------    
-using EventBus = lite::EventBus<AppEvent>;
+using EventBus = lite::EventBus<RunEvent>;
 
 #if LIGHT_SENSOR_TYPE_NUM == LIGHT_SENSOR_TYPE_TCS34725
     using Driver = Tcs34725;
@@ -100,10 +100,10 @@ private:
 
         LOG_INFO("c=%05u r=%05u g=%05u b=%05u", r.y, r.r, r.g, r.b);
 
-        event_bus_.publish({AppEventId::LIGHT_LUM, { .light_lum = { 
+        event_bus_.publish({RunEventId::LIGHT_LUM, { .light_lum = { 
             .y = raw_to_u8(r.y)
         }}});
-        event_bus_.publish({AppEventId::LIGHT_RGB, { .light_rgb = { 
+        event_bus_.publish({RunEventId::LIGHT_RGB, { .light_rgb = { 
             .r = raw_to_u8(r.r),
             .g = raw_to_u8(r.g),
             .b = raw_to_u8(r.b)

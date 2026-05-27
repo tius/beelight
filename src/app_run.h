@@ -1,9 +1,11 @@
-//  main application entry point
+//  app runtime
 //
 //  see LICENSE for terms
 
+#pragma once
+
 #include "settings.h"
-#include "app_event.h"
+#include "run_event.h"
 #include "rgb_show.h"
 #include "stripe.h"
 #include "infrared.h"
@@ -28,13 +30,36 @@
 #define LOG_LEVEL       trace
 
 //==============================================================================
-class App {
+class AppRun {
 //------------------------------------------------------------------------------
 public:
-	static App& instance() noexcept {
-		static App app;
-		return app;
-	}    
+    AppRun() {
+        update_boot_count();
+
+        if (!light_meter_) {
+            LOG_ERROR("light meter not available: %s", light_meter_.status().str());
+        }
+        if (!acc_meter_) {
+            LOG_ERROR("acc meter not available: %s", acc_meter_.status().str());
+        }
+        if (!infrared_) {
+            LOG_ERROR("infrared not responding: %s", infrared_.status().str());
+        }
+
+        lite::std_out->println(APP_BANNER_TEXT);
+
+        console_.ready();
+        rgb_show_.set(RgbState::CHARGE);
+
+        stripe_.clr( lite::k_rgb_red );
+        stripe_.update();
+
+        // timer_.start(60s);
+    }
+
+    // prevent copying
+    AppRun(const AppRun&) = delete;
+    AppRun& operator=(const AppRun&) = delete;
 
 	void loop() {
         wake_morse_.tick();
@@ -53,7 +78,7 @@ public:
 //------------------------------------------------------------------------------
 private:
     using AppLogger = lite::CustomLogger<LOG_ANSI_COLOR, LOG_TIMESTAMP, LOG_LEVEL_PREFIX>;
-    using EventBus  = lite::EventBus<AppEvent>;
+    using EventBus  = lite::EventBus<RunEvent>;
     using RtcMem    = lite::sys::RtcMem;
     template <typename X>
     using RtcVar    = lite::sys::RtcVar<X>;
@@ -99,34 +124,6 @@ private:
 
     lite::Timer         timer_      { MSG_THIS(on_timer) };
     
-    App() {
-        update_boot_count();
-
-        if (!light_meter_) {
-            LOG_ERROR("light meter not available: %s", light_meter_.status().str());
-        }
-        if (!acc_meter_) {
-            LOG_ERROR("acc meter not available: %s", acc_meter_.status().str());
-        }
-        if (!infrared_) {
-            LOG_ERROR("infrared not responding: %s", infrared_.status().str());
-        }
-
-        lite::std_out->println(APP_BANNER_TEXT);
-
-        console_.ready();
-        rgb_show_.set(RgbState::CHARGE);
-
-        stripe_.clr( lite::k_rgb_red );
-        stripe_.update();
-
-        // timer_.start(60s);
-    }
-
-    // prevent copying
-    App(const App&) = delete;
-    App& operator=(const App&) = delete;
-
     void on_cmd_led(lite::Out& out, lite::Args args) {
         (void)out;
         rgb_show_.set( args.get_u16() );

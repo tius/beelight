@@ -10,7 +10,7 @@
 #pragma once
 
 #include "settings.h"
-#include "app_event.h"
+#include "run_event.h"
 #include "wake_info.h"
 
 #include "lite/effects/morse.h"
@@ -43,7 +43,7 @@ struct WakeMorseState {
 
 //=============================================================================
 class WakeMorse final {
-using EventBus = lite::EventBus<AppEvent>;
+using EventBus = lite::EventBus<RunEvent>;
 using StateVar = lite::sys::RtcVar<WakeMorseState>;
 
 //-----------------------------------------------------------------------------
@@ -197,6 +197,6 @@ private:
         }
 
         clear_state();
-        event_bus_.publish({ AppEvent::Id::MORSE_CMD, payload });
+        event_bus_.publish({ RunEvent::Id::MORSE_CMD, payload });
     }
 };

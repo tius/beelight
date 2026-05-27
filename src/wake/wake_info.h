@@ -38,7 +38,7 @@ using WakeUptime = lite::sys::RtcVar<u32>;
 
 //-----------------------------------------------------------------------------
 public:
-    WakeInfo(WakeUptime& wake_uptime, WakeHook& wake_hook) noexcept
+    WakeInfo(WakeUptime wake_uptime, WakeHook& wake_hook) noexcept
         : wake_uptime_(wake_uptime), wake_hook_(wake_hook)
     {
         //  sys context is intentional, loop may start too late
@@ -54,7 +54,7 @@ private:
 
     static constexpr u16 never = 0xFFFFu;
 
-    WakeUptime&     wake_uptime_;
+    WakeUptime      wake_uptime_;
     WakeHook&       wake_hook_;
     ButtonGpio      button_gpio_;
     

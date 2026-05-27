@@ -55,6 +55,24 @@ struct MorseCmd {
     u8 len;
 
     template <size_t N>
+    [[nodiscard]] bool is(const char (&value)[N]) const noexcept {
+        static_assert(N > 0u);
+        constexpr auto value_len = static_cast<u8>(N - 1u);
+
+        if (len != value_len || value_len > sizeof(text)) {
+            return false;
+        }
+
+        for (u8 idx = 0; idx < value_len; ++idx) {
+            if (text[idx] != value[idx]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
         snprintf(
             buffer,

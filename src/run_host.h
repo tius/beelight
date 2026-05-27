@@ -7,7 +7,8 @@
 #include <variant>
 
 #include "app_run.h"
-#include "boot/selector.h"
+#include "hotspot_run.h"
+#include "boot/request.h"
 
 //=============================================================================
 class RunHost final {
@@ -19,11 +20,15 @@ public:
     }
 
     void setup() {
-        auto mode = boot::select_mode();
+        auto mode = boot::startup_mode();
 
         switch (mode) {
             case boot::Mode::app:
                 run_.emplace<AppRun>();
+                return;
+
+            case boot::Mode::hotspot:
+                run_.emplace<HotspotRun>();
                 return;
         }
     }
@@ -43,7 +48,7 @@ private:
         void loop() noexcept {}
     };
 
-    using Run = std::variant<NoRun, AppRun>;
+    using Run = std::variant<NoRun, AppRun, HotspotRun>;
 
     Run run_ {};
 

@@ -5,6 +5,8 @@
 #pragma once
 
 #include "settings.h"
+#include "rtc.h"
+#include "boot/request.h"
 #include "event/event.h"
 #include "event/logger.h"
 #include "status_led/rgb_show.h"
@@ -20,7 +22,6 @@
 #include "lite/io/serial_out.h"
 #include "lite/io/log.h"
 #include "lite/sys/clock.h"
-#include "lite/sys/rtc_mem.h"
 #include "lite/core/timer.h"
 #include "lite/cmd/sys_cmd.h"
 #include "lite/cmd/twi_cmd.h"
@@ -78,25 +79,11 @@ public:
 private:
     using AppLogger = lite::CustomLogger<LOG_ANSI_COLOR, LOG_TIMESTAMP, LOG_LEVEL_PREFIX>;
     using EventBus  = event::Bus;
-    using RtcMem    = lite::sys::RtcMem;
-    template <typename X>
-    using RtcVar    = lite::sys::RtcVar<X>;
 
-    enum class RtcAddr : u8 {
-        RTC_ALLOC(wake_uptime, u32),
-        RTC_ALLOC(wake_morse, WakeMorseState),
-        RTC_ALLOC(test, u32),
-        count,
-    };
     EventBus            event_bus_  {};
 
-    RtcMem              rtc_mem_    {RTC_COUNT};
-    RtcVar<u32>         rtc_wake_uptime_{rtc_mem_, RTC_SLOT(wake_uptime)};
-    RtcVar<WakeMorseState> rtc_wake_morse_{rtc_mem_, RTC_SLOT(wake_morse)};
-    RtcVar<u32>         rtc_test_   {rtc_mem_, RTC_SLOT(test)};
-
-    WakeMorse           wake_morse_ {rtc_wake_morse_, event_bus_};
-    WakeInfo<WakeMorse> wake_info_  {rtc_wake_uptime_, wake_morse_};
+    WakeMorse           wake_morse_ {rtc::wake_morse(), event_bus_};
+    WakeInfo<WakeMorse> wake_info_  {rtc::wake_uptime(), wake_morse_};
     
     lite::Uart          uart_       {MONITOR_SPEED};
     lite::SerialOut     serial_out_ {uart_, "\n-----\n"};
@@ -108,6 +95,7 @@ private:
     lite::cmd::SysCmd   cmd_sys_    {shell_};
 
     event::Logger       event_logger_{event_bus_};
+    event::Hook         boot_hook_  {event_bus_, METHOD_THIS(on_event)};
 
     lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
     lite::cmd::TwiCmd   twi_cmd_    {shell_, twi_};
@@ -128,10 +116,27 @@ private:
         rgb_show_.set( args.get_u16() );
     }
 
+    void on_event(const event::Event& event) {
+        if (event.id != event::Id::MORSE_CMD) {
+            return;
+        }
+
+        on_morse_cmd(event.p1.morse_cmd);
+    }
+
+    void on_morse_cmd(const event::MorseCmd& cmd) {
+        if (!cmd.is("HS")) {
+            return;
+        }
+
+        boot::reboot(boot::Mode::hotspot);
+    }
+
     void update_boot_count() {
-        auto boot_count = rtc_test_.get();
+        auto rtc_boot_count = rtc::boot_count();
+        auto boot_count = rtc_boot_count.get();
         ++boot_count;
-        rtc_test_ = boot_count;
+        rtc_boot_count = boot_count;
 
         LOG_INFO("boot count: %lu", static_cast<unsigned long>(boot_count));
     }

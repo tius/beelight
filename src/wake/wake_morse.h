@@ -11,6 +11,7 @@
 
 #include "settings.h"
 #include "event/event.h"
+#include "wake/morse_state.h"
 #include "wake_info.h"
 
 #include "lite/effects/morse.h"
@@ -32,22 +33,13 @@ static_assert(
 );
 
 //=============================================================================
-struct WakeMorseState {
-    lite::u8 char_count;
-    lite::u8 symbol_len;
-    lite::u8 symbol_bits;
-    char chars[3];
-    lite::u16 last_release_at;
-};
-
-//=============================================================================
 class WakeMorse final {
 using EventBus = event::Bus;
 using StateVar = lite::sys::RtcVar<WakeMorseState>;
 
 //-----------------------------------------------------------------------------
 public:
-    WakeMorse(StateVar& state_var, EventBus& event_bus) noexcept
+    WakeMorse(StateVar state_var, EventBus& event_bus) noexcept
         : state_var_(state_var), event_bus_(event_bus) {}
 
     void on_wake_release(const WakeInfoSample& sample) {
@@ -116,7 +108,7 @@ private:
     static constexpr lite::u8 max_chars = 3u;
     static constexpr lite::u8 max_symbols = 5u;
 
-    StateVar& state_var_;
+    StateVar state_var_;
     EventBus& event_bus_;
 
     static WakeMorseState empty_state() noexcept {

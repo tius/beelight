@@ -5,7 +5,7 @@
 #pragma once
 
 #include "boot/mode.h"
-#include "wake/morse_state.h"
+#include "wake/wake_morse_state.h"
 
 #include "lite/core/types.h"
 #include "lite/sys/rtc_mem.h"

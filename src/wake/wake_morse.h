@@ -11,7 +11,7 @@
 
 #include "settings.h"
 #include "event/event.h"
-#include "wake/morse_state.h"
+#include "wake/wake_morse_state.h"
 #include "wake_info.h"
 
 #include "lite/effects/morse.h"

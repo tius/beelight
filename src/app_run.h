@@ -5,11 +5,12 @@
 #pragma once
 
 #include "settings.h"
+#include "back_led/back_state.h"
 #include "rtc.h"
 #include "runtime_core.h"
 #include "boot/request.h"
 #include "event/event.h"
-#include "front_leds/stripe.h"
+#include "front_leds/front_show.h"
 #include "ir/infrared.h"
 #include "sensor/light_meter.h"
 #include "sensor/acc_meter.h"
@@ -42,10 +43,9 @@ public:
         }
 
         core_.ready();
-        core_.status().set(RgbState::CHARGE);
+        core_.back_show().set(BackState::CHARGE);
 
-        stripe_.clr( lite::k_rgb_red );
-        stripe_.update();
+        front_show_.start();
 
         // timer_.start(60s);
     }
@@ -57,7 +57,6 @@ public:
 	void loop() {
         wake_morse_.tick();
         core_.loop();
-        stripe_.tick();
         infrared_.tick();
 	}
 
@@ -75,7 +74,7 @@ private:
     LightMeter          light_meter_{twi_, core_.event_bus()};
     AccMeter            acc_meter_  {twi_, core_.event_bus()};
     Infrared            infrared_   {core_.event_bus()};
-    Stripe              stripe_     {};
+    FrontShow          front_show_  {core_.front_leds()};
 
     lite::Timer         timer_      { MSG_THIS(on_timer) };
 

@@ -5,9 +5,10 @@
 #pragma once
 
 #include "settings.h"
+#include "back_led/back_show.h"
 #include "event/event.h"
 #include "event/logger.h"
-#include "status_led/rgb_show.h"
+#include "front_leds/front_leds.h"
 
 #include "lite/cli/cmd.h"
 #include "lite/cli/console.h"
@@ -37,6 +38,8 @@ public:
         if (auto c = uart_.rx(); c >= 0) {
             console_.process(char(c));
         }
+
+        front_leds_.tick();
     }
 
     [[nodiscard]] event::Bus& event_bus() noexcept {
@@ -47,8 +50,12 @@ public:
         return shell_;
     }
 
-    [[nodiscard]] RgbShow& status() noexcept {
-        return status_;
+    [[nodiscard]] BackShow& back_show() noexcept {
+        return back_show_;
+    }
+
+    [[nodiscard]] FrontLeds& front_leds() noexcept {
+        return front_leds_;
     }
 
 //------------------------------------------------------------------------------
@@ -72,12 +79,13 @@ private:
 
     event::Logger      event_logger_{event_bus_};
 
-    RgbLed             rgb_led_    {};
-    RgbShow            status_     {rgb_led_};
-    lite::Cmd          cmd_led_    {shell_, "led", "set rgb status state", "<state>", METHOD_THIS(on_cmd_led)};
+    BackLed            back_led_   {};
+    BackShow           back_show_  {back_led_};
+    lite::Cmd          cmd_back_led_{shell_, "led", "set back led state", "<state>", METHOD_THIS(on_cmd_back_led)};
+    FrontLeds          front_leds_ {};
 
-    void on_cmd_led(lite::Out& out, lite::Args args) {
+    void on_cmd_back_led(lite::Out& out, lite::Args args) {
         (void)out;
-        status_.set(args.get_u16());
+        back_show_.set(args.get_u16());
     }
 };

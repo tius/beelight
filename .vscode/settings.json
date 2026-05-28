@@ -4,6 +4,10 @@
         "&": true,
         "Push-Location": true,
         "pio": true,
-        "Pop-Location": true
+        "Pop-Location": true,
+        "/^& \"\\$env:USERPROFILE\\\\\\.platformio\\\\penv\\\\Scripts\\\\pio\\.exe\" run -e bee_rysta$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     }
 }

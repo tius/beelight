@@ -28,6 +28,13 @@
 //   event logger settings
 //------------------------------------------------------------------------------
 #define EVENT_LOG               debug       // enable event logging
+#define EVENT_QUEUE_SIZE        8           // async event fifo capacity
+
+//==============================================================================
+//  hotspot settings
+//------------------------------------------------------------------------------
+#define HOTSPOT_SSID_PREFIX     "bee-"      // prefix before device id
+#define HOTSPOT_PSK             "honeypot"  // access point password
 
 //==============================================================================
 //  wake info settings

@@ -35,6 +35,8 @@ public:
     void loop() {
         lite::Timer::spin(lite::now());
 
+        (void)event_queue_.tick();
+
         if (auto c = uart_.rx(); c >= 0) {
             console_.process(char(c));
         }
@@ -44,6 +46,10 @@ public:
 
     [[nodiscard]] event::Bus& event_bus() noexcept {
         return event_bus_;
+    }
+
+    [[nodiscard]] event::Queue& event_queue() noexcept {
+        return event_queue_;
     }
 
     [[nodiscard]] lite::CmdShell& shell() noexcept {
@@ -66,7 +72,8 @@ private:
         LOG_LEVEL_PREFIX
     >;
 
-    event::Bus         event_bus_  {};
+    event::Bus         event_bus_   {};
+    event::Queue       event_queue_ {event_bus_};
 
     lite::Uart         uart_       {MONITOR_SPEED};
     lite::SerialOut    serial_out_ {uart_, "\n-----\n"};
@@ -75,17 +82,18 @@ private:
 
     lite::CmdShell     shell_      {};
     lite::Console      console_    {shell_, serial_out_};
-    lite::cmd::SysCmd  cmd_sys_    {shell_};
 
     event::Logger      event_logger_{event_bus_};
 
     BackLed            back_led_   {};
     BackShow           back_show_  {back_led_};
-    lite::Cmd          cmd_back_led_{shell_, "led", "set back led state", "<state>", METHOD_THIS(on_cmd_back_led)};
     FrontLeds          front_leds_ {};
 
+    //  shell commands
+    lite::Cmd          cmd_back_led_{shell_, "led", "set back led state", "<state>", METHOD_THIS(on_cmd_back_led)};
     void on_cmd_back_led(lite::Out& out, lite::Args args) {
         (void)out;
         back_show_.set(args.get_u16());
     }
+    lite::cmd::SysCmd  cmd_sys_    {shell_};
 };

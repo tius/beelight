@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include "settings.h"
 #include "driver/ir_code.h"
 
 #include "lite/core/types.h"
 #include "lite/core/fsm.h"
 #include "lite/core/event_bus.h"
+#include "lite/core/event_queue.h"
 
 namespace event {
 
@@ -202,5 +204,6 @@ static_assert(sizeof(Event) == 5, "unexpected size of event::Event");
 
 using Bus = lite::EventBus<Event>;
 using Hook = lite::EventHook<Event>;
+using Queue = lite::EventQueue<Event, EVENT_QUEUE_SIZE>;
 
 } // namespace event

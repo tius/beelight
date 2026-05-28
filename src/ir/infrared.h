@@ -5,9 +5,9 @@
 #pragma once
 
 #include "event/event.h"
-#include "status.h"
 #include "driver/ir_rx_edge.h"
 
+#include "lite/core/status.h"
 #include "lite/io/log.h"
 #include "lite/core/timer.h"
 
@@ -47,7 +47,7 @@ class Infrared {
 using EventBus = event::Bus;
 
 public:
-    struct InfraredStatus : public Status {
+    struct InfraredStatus : public lite::Status {
         enum : u8 {
             OK = 0,
             SELFTEST_FAILED,
@@ -55,7 +55,7 @@ public:
         const char* str() const noexcept {
             switch (code) {
                 case SELFTEST_FAILED:   return "selftest failed";
-                default:                return Status::str();
+                default:                return lite::Status::str();
             }
         }
     };

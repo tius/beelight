@@ -11,6 +11,8 @@
 #include "lite/core/fsm.h"
 #include "lite/core/event_bus.h"
 #include "lite/core/event_queue.h"
+#include "lite/core/ipv4.h"
+#include "lite/esp8266/hotspot.h"
 
 namespace event {
 
@@ -32,6 +34,9 @@ struct Id : public lite::fsm::EventId {
         LIGHT_RGB,
         TEMP,
         TILT,
+        HOTSPOT_STARTED,
+        HOTSPOT_FAILED,
+        HOTSPOT_CLIENT_COUNT,
     };
 
     using lite::fsm::EventId::EventId;
@@ -44,6 +49,9 @@ struct Id : public lite::fsm::EventId {
             case LIGHT_RGB:             return "LIGHT_RGB";
             case TEMP:                  return "TEMP";
             case TILT:                  return "TILT";
+            case HOTSPOT_STARTED:       return "HOTSPOT_STARTED";
+            case HOTSPOT_FAILED:        return "HOTSPOT_FAILED";
+            case HOTSPOT_CLIENT_COUNT:  return "HOTSPOT_CLIENT_COUNT";
             default:                    return lite::fsm::EventId::str();
         }
     }
@@ -154,6 +162,37 @@ struct Tilt {
     }
 };
 
+struct HotspotStarted {
+    lite::Ipv4 ip;
+
+    template <size_t N>
+    const char* fmt(char (&buffer)[N]) const {
+        char ip_buf[16];
+        snprintf(buffer, N, "hotspot_started ip=%s", ip.fmt(ip_buf));
+        return buffer;
+    }
+};
+
+struct HotspotFailed {
+    lite::esp8266::HotspotStatus status;
+
+    template <size_t N>
+    const char* fmt(char (&buffer)[N]) const {
+        snprintf(buffer, N, "hotspot_failed %s", status.str());
+        return buffer;
+    }
+};
+
+struct HotspotClientCount {
+    u8 count;
+
+    template <size_t N>
+    const char* fmt(char (&buffer)[N]) const {
+        snprintf(buffer, N, "hotspot_client_count %u", count);
+        return buffer;
+    }
+};
+
 //-----------------------------------------------------------------------------
 struct Payload {
     union {
@@ -163,6 +202,9 @@ struct Payload {
         LightRgb            light_rgb;
         Tilt                tilt;
         Temp                temp;
+        HotspotStarted      hotspot_started;
+        HotspotFailed       hotspot_failed;
+        HotspotClientCount  hotspot_client_count;
     };
 };
 
@@ -191,6 +233,10 @@ struct Event {
             case Id::LIGHT_RGB:         return p1.light_rgb.fmt(buffer);
             case Id::TILT:              return p1.tilt.fmt(buffer);
             case Id::TEMP:              return p1.temp.fmt(buffer);
+            case Id::HOTSPOT_STARTED:   return p1.hotspot_started.fmt(buffer);
+            case Id::HOTSPOT_FAILED:    return p1.hotspot_failed.fmt(buffer);
+            case Id::HOTSPOT_CLIENT_COUNT:
+                return p1.hotspot_client_count.fmt(buffer);
         }
         snprintf(buffer, N, "event %s", id.str()); 
         return buffer;        

@@ -6,11 +6,12 @@
 
 #include <cstdio>
 
-#include <ESP8266WiFi.h>
-
 #include "back_led/back_state.h"
+#include "event/event.h"
 #include "runtime_core.h"
 
+#include "lite/core/changed.h"
+#include "lite/esp8266/hotspot.h"
 #include "lite/io/log.h"
 #include "lite/sys/device_info.h"
 
@@ -31,11 +32,14 @@ public:
     HotspotRun() {
         core_.ready();
         core_.back_show().set(BackState::HOTSPOT);
+
+        setup_ssid();
         start_hotspot();
     }
 
     void loop() {
         core_.loop();
+        tick_hotspot();
     }
 
 //-----------------------------------------------------------------------------
@@ -49,35 +53,45 @@ private:
     static_assert(sizeof(HOTSPOT_PSK) <= 64);
 
     RuntimeCore core_ {};
+    lite::esp8266::Hotspot hotspot_ {};
     char ssid_[SSID_SIZE] {};
+    lite::u8 client_count_ = 0u;
+    bool started_ = false;
 
     void start_hotspot() {
-        format_ssid();
-
-        WiFi.persistent(false);
-
-        if (!WiFi.mode(WIFI_AP)) {
-            LOG_ERROR("wifi: ap mode failed");
+        const auto status = hotspot_.start(ssid_, HOTSPOT_PSK);
+        if (status.is_error()) {
+            LOG_ERROR("access point: start failed status=%s", status.str());
+            post_failed(status);
             return;
         }
 
-        if (!WiFi.softAP(ssid_, HOTSPOT_PSK)) {
-            LOG_ERROR("access point: start failed");
-            return;
-        }
+        started_ = true;
+        client_count_ = hotspot_.client_count();
 
-        const auto ip = WiFi.softAPIP();
+        const auto ip = hotspot_.ip();
+        char ip_buf[16];
         LOG_INFO(
-            "access point: started ssid=%s ip=%u.%u.%u.%u",
+            "access point: started ssid=%s ip=%s",
             ssid_,
-            static_cast<unsigned>(ip[0]),
-            static_cast<unsigned>(ip[1]),
-            static_cast<unsigned>(ip[2]),
-            static_cast<unsigned>(ip[3])
+            ip.fmt(ip_buf)
         );
+
+        post_started(ip);
+        post_client_count(client_count_);
     }
 
-    void format_ssid() {
+    void tick_hotspot() {
+        if (!started_) {
+            return;
+        }
+        if (!lite::changed(client_count_, hotspot_.client_count())) {
+            return;
+        }
+        post_client_count(client_count_);
+    }
+
+    void setup_ssid() {
         std::snprintf(
             ssid_,
             sizeof(ssid_),
@@ -86,6 +100,30 @@ private:
             static_cast<unsigned long>(lite::sys::device_id())
         );
     }
+
+    void post_started(lite::Ipv4 ip) {
+        post({ event::Id::HOTSPOT_STARTED, { .hotspot_started = { ip } } });
+    }
+
+    void post_failed(lite::esp8266::HotspotStatus status) {
+        post({ event::Id::HOTSPOT_FAILED, { .hotspot_failed = { status } } });
+    }
+
+    void post_client_count(lite::u8 count) {
+        post({ event::Id::HOTSPOT_CLIENT_COUNT, { .hotspot_client_count = {
+            count
+        } } });
+    }
+
+    void post(const event::Event& event) {
+        if (core_.event_queue().post(event)) {
+            return;
+        }
+
+        char buffer[96];
+        LOG_ERROR("event queue: dropped %s", event.fmt(buffer));
+    }
+
 };
 
 #undef LOG_LEVEL

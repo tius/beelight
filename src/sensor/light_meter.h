@@ -3,10 +3,10 @@
 //  see LICENSE file for terms
 
 #pragma once
-#include "status.h"
 #include "event/event.h"
 
 #include "lite/color/gamma_lut.h"
+#include "lite/core/status.h"
 #include "lite/io/log.h"
 #include "lite/sys/twi.h"
 #include "lite/core/bits.h"
@@ -51,7 +51,7 @@ using EventBus = event::Bus;
 #endif
 
 public:
-    struct MeterStatus : public Status {
+    struct MeterStatus : public lite::Status {
         enum : u8 {
             OK = 0,
             SENSOR_ERROR,
@@ -59,7 +59,7 @@ public:
         const char* str() const noexcept {
             switch (code) {
                 case SENSOR_ERROR:  return "sensor error";
-                default:            return Status::str();
+                default:            return lite::Status::str();
             }
         }
     };

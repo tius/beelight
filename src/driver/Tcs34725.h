@@ -3,8 +3,8 @@
 //  see LICENSE file for terms
 
 #pragma once
-#include "status.h"
 
+#include "lite/core/status.h"
 #include "lite/io/log.h"
 #include "lite/sys/twi.h"
 #include "lite/core/bits.h"
@@ -16,7 +16,7 @@
 class Tcs34725 {
 //------------------------------------------------------------------------------    
 public:
-    struct DeviceStatus : public Status {
+    struct DeviceStatus : public lite::Status {
         enum : u8 {
             OK = 0,
             ERR_PROBE,
@@ -32,12 +32,12 @@ public:
                 case ERR_ID_VALUE:      return "id mismatch";
                 case ERR_CFG_WRITE:     return "config write failed";
                 case ERR_ENABLE_WRITE:  return "enable write failed";
-                default:                return Status::str();
+                default:                return lite::Status::str();
             }
         }
     };
 
-    struct ReadStatus : public Status {
+    struct ReadStatus : public lite::Status {
         enum : u8 {
             OK = 0,
             NOT_READY,
@@ -51,7 +51,7 @@ public:
                 case ERR_NOT_INIT:      return "not initialized";
                 case ERR_STATUS_READ:   return "status read failed";
                 case ERR_DATA_READ:     return "data read failed";
-                default:                return Status::str();
+                default:                return lite::Status::str();
             }
         }
     };

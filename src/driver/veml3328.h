@@ -3,8 +3,8 @@
 //  see LICENSE file for terms
 
 #pragma once
-#include "status.h"
 
+#include "lite/core/status.h"
 #include "lite/io/log.h"
 #include "lite/sys/twi.h"
 #include "lite/core/bits.h"
@@ -16,7 +16,7 @@
 class Veml3328 {
 //------------------------------------------------------------------------------
 public:
-    struct DeviceStatus : public Status {
+    struct DeviceStatus : public lite::Status {
         enum : u8 {
             OK = 0,
             ERR_PROBE,
@@ -27,12 +27,12 @@ public:
             switch (code) {
                 case ERR_PROBE:     return "probe failed";
                 case ERR_CFG_WRITE: return "config write failed";
-                default:            return Status::str();
+                default:            return lite::Status::str();
             }
         }
     };
 
-    struct ReadStatus : public Status {
+    struct ReadStatus : public lite::Status {
         enum : u8 {
             OK = 0,
             ERR_NOT_INIT,
@@ -43,7 +43,7 @@ public:
             switch (code) {
                 case ERR_NOT_INIT:  return "not initialized";
                 case ERR_DATA_READ: return "data read failed";
-                default:            return Status::str();
+                default:            return lite::Status::str();
             }
         }
     };

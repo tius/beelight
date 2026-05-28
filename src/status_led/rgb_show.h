@@ -83,6 +83,7 @@ private:
         switch (state) {
             case RgbState::OFF:     morse_.play("gI"); break;
             case RgbState::CHARGE:  morse_.play("r~"); break;
+            case RgbState::HOTSPOT: morse_.play("bHS\r"); break;
             case RgbState::TEST:    morse_.play("b-"); break;
         }
     }

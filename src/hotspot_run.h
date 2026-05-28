@@ -4,9 +4,22 @@
 
 #pragma once
 
+#include "runtime_core.h"
+
 //=============================================================================
 class HotspotRun final {
 //-----------------------------------------------------------------------------
 public:
-    void loop() noexcept {}
+    HotspotRun() {
+        core_.ready();
+        core_.status().set(RgbState::HOTSPOT);
+    }
+
+    void loop() {
+        core_.loop();
+    }
+
+//-----------------------------------------------------------------------------
+private:
+    RuntimeCore core_ {};
 };

@@ -14,6 +14,7 @@ struct RgbState {
     enum : u8 {
         OFF,
         CHARGE,
+        HOTSPOT,
         TEST,
         COUNT_
     };
@@ -28,6 +29,7 @@ struct RgbState {
         switch (id) {
             case OFF:               return "OFF";
             case CHARGE:            return "CHARGE";
+            case HOTSPOT:           return "HOTSPOT";
             case TEST:              return "TEST";
             default:                return "?";
         }

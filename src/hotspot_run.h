@@ -52,6 +52,14 @@ private:
     static_assert(sizeof(HOTSPOT_PSK) >= 9);
     static_assert(sizeof(HOTSPOT_PSK) <= 64);
 
+    static constexpr lite::esp8266::HotspotDhcpConfig DHCP_CFG {
+        .ip             = HOTSPOT_IP,
+        .gateway        = HOTSPOT_GATEWAY,
+        .netmask        = HOTSPOT_NETMASK,
+        .lease_start    = HOTSPOT_LEASE_START,
+        .lease_end      = HOTSPOT_LEASE_END,
+    };
+
     RuntimeCore core_ {};
     lite::esp8266::Hotspot hotspot_ {};
     char ssid_[SSID_SIZE] {};
@@ -59,9 +67,9 @@ private:
     bool started_ = false;
 
     void start_hotspot() {
-        const auto status = hotspot_.start(ssid_, HOTSPOT_PSK);
+        const auto status = hotspot_.start(ssid_, HOTSPOT_PSK, DHCP_CFG);
         if (status.is_error()) {
-            LOG_ERROR("access point: start failed status=%s", status.str());
+            LOG_ERROR("start failed: %s", status.str());
             post_failed(status);
             return;
         }
@@ -72,7 +80,7 @@ private:
         const auto ip = hotspot_.ip();
         char ip_buf[16];
         LOG_INFO(
-            "access point: started ssid=%s ip=%s",
+            "started ssid=%s ip=%s",
             ssid_,
             ip.fmt(ip_buf)
         );

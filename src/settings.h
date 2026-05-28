@@ -4,6 +4,7 @@
 
 #pragma once
 #include "build_info.h"
+
 #include "lite/core/macros.h"
 #include XINCLUDE(boards/,BOARD,.h)
 
@@ -35,6 +36,12 @@
 //------------------------------------------------------------------------------
 #define HOTSPOT_SSID_PREFIX     "bee-"      // prefix before device id
 #define HOTSPOT_PSK             "honeypot"  // access point password
+
+#define HOTSPOT_IP              lite::ipv4(192, 168, 4, 1)
+#define HOTSPOT_GATEWAY         lite::ipv4(192, 168, 4, 1)
+#define HOTSPOT_NETMASK         lite::ipv4(255, 255, 255, 0)
+#define HOTSPOT_LEASE_START     lite::ipv4(192, 168, 4, 2)
+#define HOTSPOT_LEASE_END       lite::ipv4(192, 168, 4, 5)
 
 //==============================================================================
 //  wake info settings

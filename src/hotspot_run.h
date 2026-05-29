@@ -38,7 +38,7 @@ public:
     }
 
     void loop() {
-        core_.loop();
+        core_.tick();
         tick_hotspot();
     }
 
@@ -89,14 +89,12 @@ private:
         post_client_count(client_count_);
     }
 
-    void tick_hotspot() {
-        if (!started_) {
-            return;
+    bool tick_hotspot() {
+        if ( started_ && lite::changed(client_count_, hotspot_.client_count()) ) {
+            post_client_count(client_count_);
+            return true;
         }
-        if (!lite::changed(client_count_, hotspot_.client_count())) {
-            return;
-        }
-        post_client_count(client_count_);
+        return false;
     }
 
     void setup_ssid() {

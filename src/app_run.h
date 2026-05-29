@@ -56,7 +56,7 @@ public:
 
 	void loop() {
         wake_morse_.tick();
-        core_.loop();
+        core_.tick();
         infrared_.tick();
 	}
 

@@ -33,7 +33,7 @@ public:
         console_.ready();
     }
 
-    void loop() {
+    void tick() {
         lite::Timer::spin(lite::now());
 
         (void)event_queue_.tick();
@@ -93,13 +93,10 @@ private:
     //  shell commands
     lite::Cmd          cmd_back_led_{shell_, "led", "set back led state", "<state>", METHOD_THIS(on_cmd_back_led)};
     void on_cmd_back_led(lite::Out& out, lite::Args args) {
-        (void)out;
         back_show_.set(args.get_u16());
     }
-    lite::Cmd          cmd_hotspot_ {shell_, "hotspot", "boot hotspot", "", METHOD_THIS(on_cmd_hotspot)};
+    lite::Cmd          cmd_hotspot_ {shell_, "hotspot", "run hotspot", "", METHOD_THIS(on_cmd_hotspot)};
     void on_cmd_hotspot(lite::Out& out, lite::Args args) {
-        (void)out;
-        (void)args;
         boot::reboot(boot::Mode::hotspot);
     }
     lite::cmd::SysCmd  cmd_sys_    {shell_};

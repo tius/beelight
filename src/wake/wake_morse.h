@@ -14,7 +14,7 @@
 #include "wake/wake_morse_state.h"
 #include "wake_info.h"
 
-#include "lite/effects/morse.h"
+#include "lite/core/morse_code.h"
 #include "lite/sys/clock.h"
 #include "lite/sys/rtc_mem.h"
 #include "lite/core/types.h"

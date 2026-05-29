@@ -23,8 +23,9 @@ public:
     bool is_ready() const noexcept {
         return true;
     }
-    void tick() {
+    bool tick() {
         //  default implementation does nothing
+        return false;
     }
 
     void tx(IrCode code) {

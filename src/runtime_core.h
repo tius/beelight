@@ -6,6 +6,7 @@
 
 #include "settings.h"
 #include "back_led/back_show.h"
+#include "boot/request.h"
 #include "event/event.h"
 #include "event/logger.h"
 #include "front_leds/front_leds.h"
@@ -94,6 +95,12 @@ private:
     void on_cmd_back_led(lite::Out& out, lite::Args args) {
         (void)out;
         back_show_.set(args.get_u16());
+    }
+    lite::Cmd          cmd_hotspot_ {shell_, "hotspot", "boot hotspot", "", METHOD_THIS(on_cmd_hotspot)};
+    void on_cmd_hotspot(lite::Out& out, lite::Args args) {
+        (void)out;
+        (void)args;
+        boot::reboot(boot::Mode::hotspot);
     }
     lite::cmd::SysCmd  cmd_sys_    {shell_};
 };

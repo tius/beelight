@@ -76,15 +76,15 @@ public:
         save_state(state);
     }
 
-    void tick() {
+    bool tick() {
         WakeMorseState state = load_state();
         if (!has_input(state)) {
-            return;
+            return false;
         }
 
         if (state.symbol_len == 0u) {
             clear_state();
-            return;
+            return true;
         }
 
         const lite::u16 idle = elapsed(
@@ -92,15 +92,16 @@ public:
             state.last_release_at
         );
         if (idle < WAKE_MORSE_DONE_GAP_MS) {
-            return;
+            return false;
         }
 
         if (!finish_char(state)) {
             clear_state();
-            return;
+            return true;
         }
 
         publish_command(state);
+        return true;
     }
 
 //-----------------------------------------------------------------------------

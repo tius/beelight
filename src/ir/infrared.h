@@ -76,18 +76,17 @@ public:
         return status_;
     }
 
-    void tick() {
-        ir_tx_.tick();
-        const IrCode code = ir_rx_.read();
-        if (code.is_invalid()) {
-            return;
+    bool tick() {
+        int work_done = ir_tx_.tick();
+
+        if ( IrCode code = ir_rx_.read(); code ) {
+            log_code(code);
+            event_bus_.publish({ event::Id::IR_RX, { .ir_rx = {
+                .code = code
+            }}} );
+            work_done++;
         }
-
-        log_code(code);
-
-        event_bus_.publish({ event::Id::IR_RX, { .ir_rx = {
-            .code = code
-        }}} );
+        return work_done;
     }
 
 //------------------------------------------------------------------------------    
@@ -128,7 +127,7 @@ private:
  
         delay(10);
         const IrCode code = ir_rx_.read();
-        if (code.is_valid()) {
+        if (code) {
             LOG_DEBUG(
                 "self test: received %08lX",
                 static_cast<unsigned long>(code.raw())

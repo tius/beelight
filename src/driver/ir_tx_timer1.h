@@ -63,8 +63,8 @@ public:
         return tx_engine_.is_ready();
     }
 
-    void tick() {
-        tx_engine_.tick();
+    bool tick() {
+        return tx_engine_.tick();
     }
 
     bool send_data_frame(u32 raw_frame, u16 mark_us, u16 space_us) {
@@ -156,9 +156,9 @@ private:
         }
 
         //----------------------------------------------------------------------
-        void tick() {
+        bool tick() {
             if (state != State::done) {
-                return;
+                return false;
             }
 
             setTimer1Callback(nullptr);
@@ -166,6 +166,7 @@ private:
             carrier_cnt = 0;
             next_edge_at = 0;
             state = State::idle;
+            return true;
         }
 
         //----------------------------------------------------------------------

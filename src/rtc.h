@@ -22,7 +22,10 @@ enum class RtcAddr : lite::u8 {
     count,
 };
 
-static_assert(RTC_COUNT <= 127u, "rtc layout exceeds esp8266 user memory");
+static_assert(
+    RTC_COUNT <= lite::sys::RtcMem::max_count,
+    "rtc layout exceeds esp8266 user memory"
+);
 
 //-----------------------------------------------------------------------------
 inline lite::sys::RtcMem& mem() {

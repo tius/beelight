@@ -75,6 +75,10 @@ public:
         return !is_invalid();
     }
 
+    explicit constexpr operator bool() const noexcept {
+        return is_valid();
+    }
+
     constexpr bool is_data() const noexcept {
         return is_valid() && !is_repeat();
     }

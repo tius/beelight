@@ -12,6 +12,7 @@
 #include "lite/effects/morse.h"
 #include "lite/effects/breath.h"
 #include "lite/io/log.h"
+#include "lite/sys/flash_string.h"
 
 #define LOG_TAG     back_show
 #define LOG_LEVEL   trace
@@ -94,16 +95,16 @@ private:
 		constexpr State(lite::u8 value) : id(value) {}
 		constexpr operator lite::u8() const { return id; }
 
-		const char* code() const noexcept {
+		lite::sys::FlashString code() const noexcept {
 			switch (id) {
-				case idle:              return "r~";
-				case hotspot_clients_0: return "b~";
-				case hotspot_clients_1: return "bE    \r";
-				case hotspot_clients_2: return "bI    \r";
-				case hotspot_clients_3: return "bS    \r";
-				case hotspot_clients_4: return "bH    \r";
-				case hotspot_failed:    return "bT";
-				default:                return "r~";
+				case hotspot_clients_0: return LITE_FLASH_STRING("b~");
+				case hotspot_clients_1: return LITE_FLASH_STRING("bE    \r");
+				case hotspot_clients_2: return LITE_FLASH_STRING("bI    \r");
+				case hotspot_clients_3: return LITE_FLASH_STRING("bS    \r");
+				case hotspot_clients_4: return LITE_FLASH_STRING("bH    \r");
+				case hotspot_failed:    return LITE_FLASH_STRING("bT");
+				case idle:
+				default:                return LITE_FLASH_STRING("r~");
 			}
 		}
 	};
@@ -134,7 +135,7 @@ private:
 
 	void apply_state(State state) {
 		morse_.off();
-		morse_.play(state.code());
+		morse_.play_flash(state.code());
 	}
 
 	static constexpr State hotspot_clients_state(lite::u8 count) {

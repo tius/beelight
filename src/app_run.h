@@ -5,7 +5,6 @@
 #pragma once
 
 #include "settings.h"
-#include "back_led/back_state.h"
 #include "rtc.h"
 #include "runtime_core.h"
 #include "boot/request.h"
@@ -43,7 +42,6 @@ public:
         }
 
         core_.ready();
-        core_.back_show().set(BackState::CHARGE);
 
         front_show_.start();
 

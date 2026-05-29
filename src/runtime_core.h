@@ -57,10 +57,6 @@ public:
         return shell_;
     }
 
-    [[nodiscard]] BackShow& back_show() noexcept {
-        return back_show_;
-    }
-
     [[nodiscard]] FrontLeds& front_leds() noexcept {
         return front_leds_;
     }
@@ -87,14 +83,10 @@ private:
     event::Logger      event_logger_{event_bus_};
 
     BackLed            back_led_   {};
-    BackShow           back_show_  {back_led_};
+    BackShow           back_show_  {back_led_, event_bus_};
     FrontLeds          front_leds_ {};
 
     //  shell commands
-    lite::Cmd          cmd_back_led_{shell_, "led", "set back led state", "<state>", METHOD_THIS(on_cmd_back_led)};
-    void on_cmd_back_led(lite::Out& out, lite::Args args) {
-        back_show_.set(args.get_u16());
-    }
     lite::Cmd          cmd_hotspot_ {shell_, "hotspot", "run hotspot", "", METHOD_THIS(on_cmd_hotspot)};
     void on_cmd_hotspot(lite::Out& out, lite::Args args) {
         boot::reboot(boot::Mode::hotspot);

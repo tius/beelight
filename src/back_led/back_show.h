@@ -5,7 +5,7 @@
 #pragma once
 
 #include "back_led.h"
-#include "back_state.h"
+#include "event/event.h"
 #include "settings.h"
 
 #include "lite/core/changed.h"
@@ -24,12 +24,7 @@ public:
 		: led_(led) {}
 
 	void out(bool on) {
-		if (on) {
-			led_.set(color_);
-			return;
-		}
-
-		led_.set(lite::k_rgb_black);
+		led_.set(on ? color_ : lite::k_rgb_black);
 	}
 
 	void on_start() {
@@ -62,7 +57,7 @@ private:
 	};
 
 	BackLed&   led_;
-	lite::Rgb8 color_;
+	lite::Rgb8 color_ = lite::k_rgb_black;
 	Breath     breath_{*this};
 
 	void breath_out(lite::u8 brightness) {
@@ -74,33 +69,87 @@ private:
 class BackShow final {
 //-----------------------------------------------------------------------------
 public:
-	explicit BackShow(BackLed& led)
-		: led_(led) {}
-
-	void set(lite::u8 state) noexcept {
-		if (!lite::changed(state_, state)) {
-			return;
-		}
-
+	BackShow(BackLed& led, event::Bus& event_bus)
+		: event_hook_(event_bus), morse_(led) {
+		event_hook_.attach<&BackShow::on_event>(this);
 		apply_state(state_);
 	}
 
 //-----------------------------------------------------------------------------
 private:
-	void apply_state(lite::u8 state) noexcept {
-		morse_.off();
+	struct State {
+		enum : lite::u8 {
+			idle,
+			hotspot_clients_0,
+			hotspot_clients_1,
+			hotspot_clients_2,
+			hotspot_clients_3,
+			hotspot_clients_4,
+			hotspot_failed,
+		};
 
-		switch (state) {
-			case BackState::OFF:     morse_.play("gI"); break;
-			case BackState::CHARGE:  morse_.play("r~"); break;
-			case BackState::HOTSPOT: morse_.play("bHS\r"); break;
-			case BackState::TEST:    morse_.play("b-"); break;
+		lite::u8 id = idle;
+
+		constexpr State() = default;
+		constexpr State(lite::u8 value) : id(value) {}
+		constexpr operator lite::u8() const { return id; }
+
+		const char* code() const noexcept {
+			switch (id) {
+				case idle:              return "r~";
+				case hotspot_clients_0: return "b~";
+				case hotspot_clients_1: return "bE    \r";
+				case hotspot_clients_2: return "bI    \r";
+				case hotspot_clients_3: return "bS    \r";
+				case hotspot_clients_4: return "bH    \r";
+				case hotspot_failed:    return "bT";
+				default:                return "r~";
+			}
+		}
+	};
+
+	void on_event(const event::Event& event) {
+		switch (event.id) {
+			case event::Id::HOTSPOT_STARTED:
+				set_state(State::hotspot_clients_0);
+				break;
+
+			case event::Id::HOTSPOT_FAILED:
+				set_state(State::hotspot_failed);
+				break;
+
+			case event::Id::HOTSPOT_CLIENT_COUNT:
+				set_state( hotspot_clients_state(
+					event.p1.hotspot_client_count.count
+				) );
+				break;
 		}
 	}
 
-	BackLed&         led_;
-	BackMorseBreath  morse_{led_};
-	lite::u8         state_ = 0;
+	void set_state(State state) {
+		if ( lite::changed(state_, state) ) {
+			apply_state(state_);
+		}
+	}
+
+	void apply_state(State state) {
+		morse_.off();
+		morse_.play(state.code());
+	}
+
+	static constexpr State hotspot_clients_state(lite::u8 count) {
+		switch (count) {
+			case 0u:  return State::hotspot_clients_0;
+			case 1u:  return State::hotspot_clients_1;
+			case 2u:  return State::hotspot_clients_2;
+			case 3u:  return State::hotspot_clients_3;
+			default:  return State::hotspot_clients_4;
+		}
+	}
+
+	event::Hook      event_hook_;
+	BackMorseBreath  morse_;
+	State            state_ = State::idle;
 };
 
 //=============================================================================

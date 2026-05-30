@@ -76,9 +76,9 @@ private:
         }
 
         char buffer[64];
-        LOG_INFO("charger status: %s", fmt_result(buffer, result));
+        LOG_INFO("power state: %s", fmt_result(buffer, result));
 
-        event_bus_.publish({ event::Id::CHARGER_STATUS, { .charger_status =
+        event_bus_.publish({ event::Id::POWER_STATE, { .power_state =
             result.state
         }});
     }
@@ -87,11 +87,7 @@ private:
     const char* fmt_result(char (&buffer)[N], const Mp2667::Result& result) const {
         lite::TextBuffer text(buffer);
 
-        text.append(result.state.mode.str());
-
-        if (!result.state.status.is_ok()) {
-            text.appendf(", %s", result.state.status.str());
-        }
+        text.append(result.state.str());
 
         char detail[40];
         charger_.fmt_last_read_details(detail);

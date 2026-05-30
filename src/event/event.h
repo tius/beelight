@@ -5,8 +5,8 @@
 #pragma once
 
 #include "settings.h"
-#include "driver/charger.h"
 #include "driver/ir_code.h"
+#include "power/power_state.h"
 
 #include "lite/core/types.h"
 #include "lite/core/fsm.h"
@@ -36,7 +36,7 @@ struct Id : public lite::fsm::EventId {
         LIGHT_RGB,
         TEMP,
         TILT,
-        CHARGER_STATUS,
+        POWER_STATE,
         HOTSPOT_STARTED,
         HOTSPOT_FAILED,
         HOTSPOT_CLIENT_COUNT,
@@ -52,7 +52,7 @@ struct Id : public lite::fsm::EventId {
             case LIGHT_RGB:             return "LIGHT_RGB";
             case TEMP:                  return "TEMP";
             case TILT:                  return "TILT";
-            case CHARGER_STATUS:        return "CHARGER_STATUS";
+            case POWER_STATE:           return "POWER_STATE";
             case HOTSPOT_STARTED:       return "HOTSPOT_STARTED";
             case HOTSPOT_FAILED:        return "HOTSPOT_FAILED";
             case HOTSPOT_CLIENT_COUNT:  return "HOTSPOT_CLIENT_COUNT";
@@ -205,6 +205,13 @@ struct HotspotClientCount {
     }
 };
 
+template <size_t N>
+const char* fmt_power_state(char (&buffer)[N], PowerState state) {
+    lite::TextBuffer text(buffer);
+    text.appendf("power_state %s", state.str());
+    return text.c_str();
+}
+
 //-----------------------------------------------------------------------------
 struct Payload {
     union {
@@ -214,7 +221,7 @@ struct Payload {
         LightRgb            light_rgb;
         Tilt                tilt;
         Temp                temp;
-        ChargerState        charger_status;
+        PowerState          power_state;
         HotspotStarted      hotspot_started;
         HotspotFailed       hotspot_failed;
         HotspotClientCount  hotspot_client_count;
@@ -246,7 +253,8 @@ struct Event {
             case Id::LIGHT_RGB:         return p1.light_rgb.fmt(buffer);
             case Id::TILT:              return p1.tilt.fmt(buffer);
             case Id::TEMP:              return p1.temp.fmt(buffer);
-            case Id::CHARGER_STATUS:    return p1.charger_status.fmt(buffer);
+            case Id::POWER_STATE:
+                return fmt_power_state(buffer, p1.power_state);
             case Id::HOTSPOT_STARTED:   return p1.hotspot_started.fmt(buffer);
             case Id::HOTSPOT_FAILED:    return p1.hotspot_failed.fmt(buffer);
             case Id::HOTSPOT_CLIENT_COUNT:

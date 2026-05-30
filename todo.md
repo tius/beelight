@@ -4,6 +4,7 @@
 - shipping mode
 - 1s-timer zufälliger 
 - cmd power
+- class result intern?
 
 - highside switch ws2812
 - lowside switch ir tx

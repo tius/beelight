@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "driver/charger.h"
+#include "power/power_state.h"
 
 #include "lite/core/status.h"
 #include "lite/core/text_buffer.h"
@@ -67,7 +67,7 @@ public:
     //--------------------------------------------------------------------------
     struct Result {
         ReadStatus read_state;
-        ChargerState state;
+        PowerState state;
 
         operator bool() const noexcept {
             return read_state.is_ok();
@@ -111,11 +111,9 @@ public:
         last_fault_ = fault;
         last_read_status_ = { ReadStatus::OK };
 
-        const auto raw = decode_raw_state(status, fault);
-
         return {
             .read_state = last_read_status_,
-            .state = decode_state(raw),
+            .state = decode_state(status, fault),
         };
     }
 
@@ -143,61 +141,17 @@ public:
             return text.c_str();
         }
 
-        const auto raw = decode_raw_state(last_status_, last_fault_);
-        const auto state = decode_state(raw);
+        const auto state = decode_state(last_status_, last_fault_);
 
-        append_charge_detail(text, raw, state);
-        append_flag_details(text, raw, state.status);
-        append_fault_details(text, raw, state.status);
+        append_charge_detail(text, last_status_, state);
+        append_status_details(text, last_status_);
+        append_fault_details(text, last_status_, last_fault_);
 
         return text.c_str();
     }
 
 //------------------------------------------------------------------------------
 private:
-    struct RawState {
-        enum ChargeState : u8 {
-            NOT_CHARGING = 0,
-            PRE_CHARGE,
-            CHARGING,
-            CHARGE_DONE,
-        };
-
-        enum Flag : u8 {
-            THERMAL_REG = 1u << 0u,
-            POWER_GOOD  = 1u << 1u,
-            PPM         = 1u << 2u,
-        };
-
-        enum Fault : u8 {
-            SAFETY_TIMER_FAULT = 1u << 2u,
-            BAT_FAULT          = 1u << 3u,
-            THERMAL_SHUTDOWN   = 1u << 4u,
-            VIN_FAULT          = 1u << 5u,
-            WATCHDOG_FAULT     = 1u << 6u,
-        };
-
-        u8 charge_state = NOT_CHARGING;
-        u8 flags = 0;
-        u8 faults = 0;
-
-        bool power_good() const noexcept {
-            return (flags & POWER_GOOD) != 0u;
-        }
-
-        bool power_path_management() const noexcept {
-            return (flags & PPM) != 0u;
-        }
-
-        bool thermal_regulation() const noexcept {
-            return (flags & THERMAL_REG) != 0u;
-        }
-
-        bool has_fault() const noexcept {
-            return faults != 0u;
-        }
-    };
-
     lite::Twi& twi_;
     DeviceStatus device_status_;
     u8 revision_ = 0;
@@ -218,13 +172,15 @@ private:
     static constexpr u8 STATUS_REV_SHIFT = 5u;
     static constexpr u8 STATUS_REV_MASK = 0x60;
 
-    static constexpr u8 FAULT_MASK =
-                    RawState::SAFETY_TIMER_FAULT
-                | RawState::BAT_FAULT
-                | RawState::THERMAL_SHUTDOWN
-                | RawState::VIN_FAULT
-                | RawState::WATCHDOG_FAULT
-    ;
+    static constexpr u8 CHG_PRE_CHARGE = 1;
+    static constexpr u8 CHG_CHARGING = 2;
+    static constexpr u8 CHG_CHARGE_DONE = 3;
+
+    static constexpr u8 FAULT_SAFETY_TIMER = 1u << 2u;
+    static constexpr u8 FAULT_BATTERY = 1u << 3u;
+    static constexpr u8 FAULT_THERMAL_SHUTDOWN = 1u << 4u;
+    static constexpr u8 FAULT_INPUT = 1u << 5u;
+    static constexpr u8 FAULT_WATCHDOG = 1u << 6u;
 
     DeviceStatus init() {
         if (twi_.probe(I2C_ADDR).is_error()) {
@@ -245,214 +201,104 @@ private:
         return twi_.write_read(I2C_ADDR, reg, value).is_ok();
     }
 
-    static RawState decode_raw_state(u8 status, u8 fault) noexcept {
-        return {
-            .charge_state = static_cast<u8>(
-                (status & STATUS_CHG_STAT_MASK) >> STATUS_CHG_STAT_SHIFT
-            ),
-            .flags = decode_flags(status),
-            .faults = static_cast<u8>(fault & FAULT_MASK),
-        };
-    }
-
     static u8 decode_revision(u8 status) noexcept {
         return static_cast<u8>((status & STATUS_REV_MASK) >> STATUS_REV_SHIFT);
     }
 
-    static ChargerState decode_state(const RawState& raw) noexcept {
-        return {
-            .mode = decode_mode(raw),
-            .status = decode_status(raw),
-        };
-    }
-
-    static ChargerMode decode_mode(const RawState& raw) noexcept {
-        if (!raw.power_good()) {
-            return { ChargerMode::ON_BATTERY };
+    static PowerState decode_state(u8 status, u8 fault) noexcept {
+        if (!power_good(status)) {
+            return { PowerState::ON_BATTERY };
         }
 
-        if (
-               raw.charge_state == RawState::PRE_CHARGE
-            || raw.charge_state == RawState::CHARGING
-        ) {
-            return { ChargerMode::CHARGING };
+        if (temp_fault(status, fault)) {
+            return { PowerState::TEMP_FAULT };
         }
 
-        return { ChargerMode::EXT_POWER };
-    }
-
-    static ChargerStatus decode_status(const RawState& raw) noexcept {
-        if ((raw.faults & RawState::THERMAL_SHUTDOWN) != 0u) {
-            return { ChargerStatus::TOO_HOT };
-        }
-        if ((raw.faults & RawState::BAT_FAULT) != 0u) {
-            return { ChargerStatus::BATTERY_FAULT };
-        }
-        if ((raw.faults & RawState::VIN_FAULT) != 0u) {
-            return { ChargerStatus::INPUT_FAULT };
-        }
-        if ((raw.faults & RawState::SAFETY_TIMER_FAULT) != 0u) {
-            return { ChargerStatus::SAFETY_TIMER };
-        }
-        if ((raw.faults & RawState::WATCHDOG_FAULT) != 0u) {
-            return { ChargerStatus::WATCHDOG };
-        }
-        if (raw.thermal_regulation()) {
-            return { ChargerStatus::THERMAL_LIMIT };
-        }
-        if (raw.power_path_management()) {
-            return { ChargerStatus::POWER_LIMIT };
-        }
-        if (
-               raw.power_good()
-            && raw.charge_state == RawState::CHARGE_DONE
-        ) {
-            return { ChargerStatus::CHARGE_COMPLETE };
+        if (charge_fault(fault)) {
+            return { PowerState::CHARGE_FAULT };
         }
 
-        return { ChargerStatus::OK };
-    }
-
-    static u8 decode_flags(u8 status) noexcept {
-        u8 flags = 0;
-
-        if ((status & STATUS_THERM_STAT) != 0u) {
-            flags |= RawState::THERMAL_REG;
-        }
-        if ((status & STATUS_PG_STAT) != 0u) {
-            flags |= RawState::POWER_GOOD;
-        }
-        if ((status & STATUS_PPM_STAT) != 0u) {
-            flags |= RawState::PPM;
+        if (power_limited(status, fault)) {
+            return { PowerState::POWER_LIMITED };
         }
 
-        return flags;
+        if (charging(status)) {
+            return { PowerState::CHARGING };
+        }
+
+        return { PowerState::EXT_POWER };
     }
 
     static void append_charge_detail(
         lite::TextBuffer& text,
-        const RawState& raw,
-        ChargerState state
+        u8 status,
+        PowerState state
     ) {
-        if (raw.charge_state == RawState::PRE_CHARGE) {
+        const auto state_code = charge_state(status);
+
+        if (state_code == CHG_PRE_CHARGE) {
             append_detail(text, "pre_charge");
             return;
         }
 
-        if (
-               raw.charge_state == RawState::CHARGING
-            && state.mode.code != ChargerMode::CHARGING
-        ) {
+        if (state_code == CHG_CHARGING && state.code != PowerState::CHARGING) {
             append_detail(text, "charging");
             return;
         }
 
         if (
-               raw.charge_state == RawState::CHARGE_DONE
-            && state.status.code != ChargerStatus::CHARGE_COMPLETE
+               state_code == CHG_CHARGE_DONE
+            && state.code != PowerState::EXT_POWER
         ) {
             append_detail(text, "charge_done");
         }
     }
 
-    static void append_flag_details(
+    static void append_status_details(
         lite::TextBuffer& text,
-        const RawState& raw,
-        ChargerStatus status
+        u8 status
     ) {
-        if (
-               raw.thermal_regulation()
-            && status.code != ChargerStatus::THERMAL_LIMIT
-        ) {
+        if (thermal_regulation(status)) {
             append_detail(text, "thermal_reg");
         }
 
-        if (
-               raw.power_path_management()
-            && status.code != ChargerStatus::POWER_LIMIT
-        ) {
+        if (power_path_management(status)) {
             append_detail(text, "ppm");
         }
     }
 
     static void append_fault_details(
         lite::TextBuffer& text,
-        const RawState& raw,
-        ChargerStatus status
+        u8 status,
+        u8 fault
     ) {
         append_fault_detail(
             text,
-            raw,
-            status,
-            RawState::THERMAL_SHUTDOWN,
+            fault,
+            FAULT_THERMAL_SHUTDOWN,
             "thermal_shutdown"
         );
-        append_fault_detail(
-            text,
-            raw,
-            status,
-            RawState::BAT_FAULT,
-            "battery_fault"
-        );
-        append_fault_detail(
-            text,
-            raw,
-            status,
-            RawState::VIN_FAULT,
-            "input_fault"
-        );
-        append_fault_detail(
-            text,
-            raw,
-            status,
-            RawState::SAFETY_TIMER_FAULT,
-            "safety_timer"
-        );
-        append_fault_detail(
-            text,
-            raw,
-            status,
-            RawState::WATCHDOG_FAULT,
-            "watchdog"
-        );
+        append_fault_detail(text, fault, FAULT_BATTERY, "battery_fault");
+
+        if (power_good(status)) {
+            append_fault_detail(text, fault, FAULT_INPUT, "input_fault");
+        }
+
+        append_fault_detail(text, fault, FAULT_SAFETY_TIMER, "safety_timer");
+        append_fault_detail(text, fault, FAULT_WATCHDOG, "watchdog");
     }
 
     static void append_fault_detail(
         lite::TextBuffer& text,
-        const RawState& raw,
-        ChargerStatus status,
+        u8 fault_reg,
         u8 fault,
         const char* detail
     ) {
-        if ((raw.faults & fault) == 0u) {
-            return;
-        }
-
-        if (status_represents_fault(status, fault)) {
+        if (!fault_active(fault_reg, fault)) {
             return;
         }
 
         append_detail(text, detail);
-    }
-
-    static bool status_represents_fault(
-        ChargerStatus status,
-        u8 fault
-    ) noexcept {
-        switch (status.code) {
-            case ChargerStatus::TOO_HOT:
-                return fault == RawState::THERMAL_SHUTDOWN;
-            case ChargerStatus::BATTERY_FAULT:
-                return fault == RawState::BAT_FAULT;
-            case ChargerStatus::INPUT_FAULT:
-                return fault == RawState::VIN_FAULT;
-            case ChargerStatus::SAFETY_TIMER:
-                return fault == RawState::SAFETY_TIMER_FAULT;
-            case ChargerStatus::WATCHDOG:
-                return fault == RawState::WATCHDOG_FAULT;
-            default:
-                return false;
-        }
     }
 
     static void append_detail(
@@ -469,13 +315,47 @@ private:
         text.append(detail);
     }
 
-    static const char* charge_state_str(u8 state) noexcept {
-        switch (state) {
-            case RawState::PRE_CHARGE:      return "pre_charge";
-            case RawState::CHARGING:        return "charging";
-            case RawState::CHARGE_DONE:     return "charge_done";
-            default:                        return "not_charging";
-        }
+    static u8 charge_state(u8 status) noexcept {
+        return static_cast<u8>(
+            (status & STATUS_CHG_STAT_MASK) >> STATUS_CHG_STAT_SHIFT
+        );
+    }
+
+    static bool power_good(u8 status) noexcept {
+        return (status & STATUS_PG_STAT) != 0u;
+    }
+
+    static bool charging(u8 status) noexcept {
+        const auto state = charge_state(status);
+        return state == CHG_PRE_CHARGE || state == CHG_CHARGING;
+    }
+
+    static bool thermal_regulation(u8 status) noexcept {
+        return (status & STATUS_THERM_STAT) != 0u;
+    }
+
+    static bool power_path_management(u8 status) noexcept {
+        return (status & STATUS_PPM_STAT) != 0u;
+    }
+
+    static bool fault_active(u8 fault_reg, u8 fault) noexcept {
+        return (fault_reg & fault) != 0u;
+    }
+
+    static bool temp_fault(u8 status, u8 fault) noexcept {
+        return thermal_regulation(status)
+            || fault_active(fault, FAULT_THERMAL_SHUTDOWN);
+    }
+
+    static bool charge_fault(u8 fault) noexcept {
+        return fault_active(fault, FAULT_BATTERY)
+            || fault_active(fault, FAULT_SAFETY_TIMER)
+            || fault_active(fault, FAULT_WATCHDOG);
+    }
+
+    static bool power_limited(u8 status, u8 fault) noexcept {
+        return power_path_management(status)
+            || fault_active(fault, FAULT_INPUT);
     }
 };
 

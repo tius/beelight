@@ -1,8 +1,7 @@
 # to do - personal notes
 
 mp2667
-- charge settings
-- shipping mode
+- shipping mode: not charging
 - 1s-timer zufälliger 
 - cmd power
 

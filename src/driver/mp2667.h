@@ -194,6 +194,15 @@ public:
         };
     }
 
+    bool enter_shipping_mode() {
+        if (!device_status_) {
+            return false;
+        }
+
+        const u8 value = static_cast<u8>(misc_operation_value() | MISC_FET_DIS);
+        return write_reg_u8(REG_MISC_OPERATION, value);
+    }
+
     template <std::size_t N>
     const char* fmt_device_info(char (&buffer)[N]) const {
         lite::TextBuffer text(buffer);
@@ -258,6 +267,8 @@ private:
     static constexpr u8 FAULT_THERMAL_SHUTDOWN  = 1u << 4u;
     static constexpr u8 FAULT_INPUT             = 1u << 5u;
     static constexpr u8 FAULT_WATCHDOG          = 1u << 6u;
+
+    static constexpr u8 MISC_FET_DIS            = 1u << 5u;
 
     static_assert(
         mp2667_detail::valid_step(MP2667_INPUT_MIN_MV, 3880, 5080, 80),

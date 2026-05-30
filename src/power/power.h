@@ -62,39 +62,24 @@ public:
         return status_;
     }
 
-//------------------------------------------------------------------------------
-private:
-    EventBus& event_bus_;
-    lite::Timer timer_;
-    Mp2667 charger_;
-    Status status_;
-    PowerState published_state_;
-
-    void on_timer() {
-        const auto result = charger_.read_status();
-        if (!result) {
-            LOG_WARN("status read failed: %s", result.read_state.str());
-            return;
-        }
-
-        if (!update_published_state(result.state)) {
-            return;
-        }
-
-        char buffer[64];
-        LOG_INFO("power state: %s", fmt_result(buffer, result));
-
-        event_bus_.publish({ event::Id::POWER_STATE, { .power_state =
-            published_state_
-        }});
+    Mp2667::Result read_state() {
+        return charger_.read_status();
     }
 
-    bool update_published_state(PowerState state) {
-        return lite::changed(published_state_, state);
+    bool enter_shipping_mode() {
+        if (!charger_.enter_shipping_mode()) {
+            return false;
+        }
+
+        timer_.stop();
+        return true;
     }
 
     template <std::size_t N>
-    const char* fmt_result(char (&buffer)[N], const Mp2667::Result& result) const {
+    const char* fmt_state(
+        char (&buffer)[N],
+        const Mp2667::Result& result
+    ) const {
         lite::TextBuffer text(buffer);
 
         text.append(result.state.str());
@@ -106,6 +91,31 @@ private:
         }
 
         return buffer;
+    }
+
+//------------------------------------------------------------------------------
+private:
+    EventBus&       event_bus_;
+    lite::Timer     timer_;
+    Mp2667          charger_;
+    Status          status_;
+    PowerState      published_state_;
+
+    void on_timer() {
+        const auto result = charger_.read_status();
+        if (!result) {
+            LOG_WARN("status read failed: %s", result.read_state.str());
+            return;
+        }
+
+        if ( lite::changed(published_state_, result.state) ) {
+            char buffer[64];
+            LOG_INFO("power state: %s", fmt_state(buffer, result));
+
+            event_bus_.publish({ event::Id::POWER_STATE, { .power_state =
+                published_state_
+            }});
+        }
     }
 };
 

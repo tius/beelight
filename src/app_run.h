@@ -20,7 +20,10 @@
 #include "lite/io/log.h"
 #include "lite/sys/deep_sleep.h"
 #include "lite/core/timer.h"
+#include "lite/cli/cmd.h"
 #include "lite/cmd/twi_cmd.h"
+
+#include <cstring>
 
 #define LOG_TAG         app
 #define LOG_LEVEL       trace
@@ -77,6 +80,13 @@ private:
     AccMeter            acc_meter_  {twi_, core_.event_bus()};
     Infrared            infrared_   {core_.event_bus()};
     Power               power_      {twi_, core_.event_bus()};
+    lite::Cmd           cmd_power_  {
+        core_.shell(),
+        "power",
+        "show power status / off",
+        "[off]",
+        METHOD_THIS(on_cmd_power)
+    };
     FrontShow          front_show_  {core_.front_leds()};
 
     lite::Timer         timer_      { MSG_THIS(on_timer) };
@@ -95,6 +105,42 @@ private:
         }
 
         boot::reboot(boot::Mode::hotspot);
+    }
+
+    void on_cmd_power(lite::Out& out, lite::Args args) {
+        const char* subcmd = args.get_str();
+
+        if (subcmd == nullptr) {
+            print_power_status(out);
+            return;
+        }
+
+        if (std::strcmp(subcmd, "off") == 0 && args.is_empty()) {
+            power_off(out);
+            return;
+        }
+
+        out.println("usage: power [off]");
+    }
+
+    void print_power_status(lite::Out& out) {
+        const auto result = power_.read_state();
+        if (!result) {
+            out.printf("power: %s\n", result.read_state.str());
+            return;
+        }
+
+        char buffer[64];
+        out.printf("power: %s\n", power_.fmt_state(buffer, result));
+    }
+
+    void power_off(lite::Out& out) {
+        out.println("power off: entering shipping mode");
+        out.flush();
+
+        if (!power_.enter_shipping_mode()) {
+            out.println("power off: failed");
+        }
     }
 
     void update_boot_count() {

@@ -20,13 +20,13 @@ public:
         enum : u8 {
             OK = 0,
             ERR_PROBE,
-            ERR_CFG_WRITE,
+            ERR_WRITE_CFG,
         };
 
         const char* str() const noexcept {
             switch (code) {
                 case ERR_PROBE:     return "probe failed";
-                case ERR_CFG_WRITE: return "write config failed";
+                case ERR_WRITE_CFG: return "config write failed";
                 default:            return lite::Status::str();
             }
         }
@@ -126,7 +126,7 @@ private:
 
         if (!write_reg_u16(REG_CONF, CONF_DEFAULT_ACTIVE)) {
             LOG_WARN("config failed");
-            return { DeviceStatus::ERR_CFG_WRITE };
+            return { DeviceStatus::ERR_WRITE_CFG };
         }
 
         return { DeviceStatus::OK };

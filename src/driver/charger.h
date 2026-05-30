@@ -5,9 +5,9 @@
 #pragma once
 
 #include "lite/core/status.h"
+#include "lite/core/text_buffer.h"
 
 #include <cstddef>
-#include <cstdio>
 
 //==============================================================================
 struct ChargerMode {
@@ -92,14 +92,13 @@ struct ChargerState {
 
     template <std::size_t N>
     const char* fmt(char (&buffer)[N]) const {
-        std::snprintf(
-            buffer,
-            N,
+        lite::TextBuffer text(buffer);
+        text.appendf(
             "charger_status mode=%s status=%s",
             mode.str(),
             status.str()
         );
-        return buffer;
+        return text.c_str();
     }
 };
 

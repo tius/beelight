@@ -13,6 +13,7 @@
 #include "lite/core/event_bus.h"
 #include "lite/core/event_queue.h"
 #include "lite/core/ipv4.h"
+#include "lite/core/text_buffer.h"
 #include "lite/esp8266/hotspot.h"
 
 namespace event {
@@ -87,14 +88,13 @@ struct MorseCmd {
 
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
-        snprintf(
-            buffer,
-            N,
+        lite::TextBuffer text_buffer(buffer);
+        text_buffer.appendf(
             "morse_cmd %.*s",
             static_cast<int>(len),
             text
         );
-        return buffer;
+        return text_buffer.c_str();
     }
 };
 
@@ -103,24 +103,26 @@ struct IrRx {
 
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
+        lite::TextBuffer text(buffer);
+
         IrCode::Nec nec;
         if (code.decode_nec(nec)) {
-            snprintf(buffer, N, "ir_rx %02X.%02X", nec.addr, nec.cmd);
-            return buffer;
+            text.appendf("ir_rx %02X.%02X", nec.addr, nec.cmd);
+            return text.c_str();
         }
 
         if (code.is_repeat()) {
-            snprintf(buffer, N, "ir_rx repeat");
-            return buffer;
+            text.append("ir_rx repeat");
+            return text.c_str();
         }
 
         if (code.is_invalid()) {
-            snprintf(buffer, N, "ir_rx invalid");
-            return buffer;
+            text.append("ir_rx invalid");
+            return text.c_str();
         }
 
-        snprintf(buffer, N, "ir_rx %08lX", static_cast<unsigned long>(code.raw()));
-        return buffer;
+        text.appendf("ir_rx %08lX", static_cast<unsigned long>(code.raw()));
+        return text.c_str();
     }
 };    
 
@@ -128,8 +130,9 @@ struct LightLum {
     u8      y;
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
-        snprintf(buffer, N, "light_lum %u", y);
-        return buffer;
+        lite::TextBuffer text(buffer);
+        text.appendf("light_lum %u", y);
+        return text.c_str();
     }
 };
 
@@ -139,8 +142,9 @@ struct LightRgb {
     u8      b;
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
-        snprintf(buffer, N, "light_rgb #%02x%02x%02x", r, g, b);
-        return buffer;
+        lite::TextBuffer text(buffer);
+        text.appendf("light_rgb #%02x%02x%02x", r, g, b);
+        return text.c_str();
     }
 };
 
@@ -149,8 +153,9 @@ struct Temp {
 
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
-        snprintf(buffer, N, "temp %d.%d°C", int(celsius10) / 10, int(celsius10) % 10);
-        return buffer;
+        lite::TextBuffer text(buffer);
+        text.appendf("temp %d.%d°C", int(celsius10) / 10, int(celsius10) % 10);
+        return text.c_str();
     }
 };
 
@@ -160,8 +165,9 @@ struct Tilt {
 
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
-        snprintf(buffer, N, "tilt pitch=%u roll=%u", pitch, roll);
-        return buffer;
+        lite::TextBuffer text(buffer);
+        text.appendf("tilt pitch=%u roll=%u", pitch, roll);
+        return text.c_str();
     }
 };
 
@@ -171,8 +177,9 @@ struct HotspotStarted {
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
         char ip_buf[16];
-        snprintf(buffer, N, "hotspot_started ip=%s", ip.fmt(ip_buf));
-        return buffer;
+        lite::TextBuffer text(buffer);
+        text.appendf("hotspot_started ip=%s", ip.fmt(ip_buf));
+        return text.c_str();
     }
 };
 
@@ -181,8 +188,9 @@ struct HotspotFailed {
 
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
-        snprintf(buffer, N, "hotspot_failed %s", status.str());
-        return buffer;
+        lite::TextBuffer text(buffer);
+        text.appendf("hotspot_failed %s", status.str());
+        return text.c_str();
     }
 };
 
@@ -191,8 +199,9 @@ struct HotspotClientCount {
 
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
-        snprintf(buffer, N, "hotspot_client_count %u", count);
-        return buffer;
+        lite::TextBuffer text(buffer);
+        text.appendf("hotspot_client_count %u", count);
+        return text.c_str();
     }
 };
 
@@ -243,8 +252,9 @@ struct Event {
             case Id::HOTSPOT_CLIENT_COUNT:
                 return p1.hotspot_client_count.fmt(buffer);
         }
-        snprintf(buffer, N, "event %s", id.str()); 
-        return buffer;        
+        lite::TextBuffer text(buffer);
+        text.appendf("event %s", id.str());
+        return text.c_str();
     }
 };
 

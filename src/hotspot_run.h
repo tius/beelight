@@ -4,12 +4,11 @@
 
 #pragma once
 
-#include <cstdio>
-
 #include "event/event.h"
 #include "runtime_core.h"
 
 #include "lite/core/changed.h"
+#include "lite/core/text_buffer.h"
 #include "lite/esp8266/hotspot.h"
 #include "lite/io/log.h"
 #include "lite/sys/device_info.h"
@@ -96,9 +95,8 @@ private:
     }
 
     void setup_ssid() {
-        std::snprintf(
-            ssid_,
-            sizeof(ssid_),
+        lite::TextBuffer text(ssid_);
+        text.appendf(
             "%s%06lx",
             HOTSPOT_SSID_PREFIX,
             static_cast<unsigned long>(lite::sys::device_id())

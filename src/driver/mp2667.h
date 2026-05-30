@@ -121,7 +121,7 @@ public:
     const char* fmt_device_info(char (&buffer)[N]) const {
         lite::TextBuffer text(buffer);
         text.appendf("mp2667 rev %u", revision_);
-        return text.c_str();
+        return buffer;
     }
 
     template <std::size_t N>
@@ -129,16 +129,16 @@ public:
         lite::TextBuffer text(buffer);
 
         if (last_read_status_.code == ReadStatus::ERR_NOT_INIT) {
-            return text.c_str();
+            return buffer;
         }
 
         if (last_read_status_.code == ReadStatus::ERR_READ_STATUS) {
-            return text.c_str();
+            return buffer;
         }
 
         if (last_read_status_.code == ReadStatus::ERR_READ_FAULT) {
             text.appendf("status 0x%02X", last_status_);
-            return text.c_str();
+            return buffer;
         }
 
         const auto state = decode_state(last_status_, last_fault_);
@@ -147,40 +147,41 @@ public:
         append_status_details(text, last_status_);
         append_fault_details(text, last_status_, last_fault_);
 
-        return text.c_str();
+        return buffer;
     }
 
 //------------------------------------------------------------------------------
 private:
-    lite::Twi& twi_;
-    DeviceStatus device_status_;
-    u8 revision_ = 0;
-    ReadStatus last_read_status_ = { ReadStatus::ERR_NOT_INIT };
-    u8 last_status_ = 0;
-    u8 last_fault_ = 0;
-
     static constexpr u8 I2C_ADDR = MP2667_I2C_ADDR;
 
-    static constexpr u8 REG_SYSTEM_STATUS = 0x07;
-    static constexpr u8 REG_FAULT = 0x08;
+    static constexpr u8 REG_SYSTEM_STATUS       = 0x07;
+    static constexpr u8 REG_FAULT               = 0x08;
 
-    static constexpr u8 STATUS_THERM_STAT = 0x01;
-    static constexpr u8 STATUS_PG_STAT = 0x02;
-    static constexpr u8 STATUS_PPM_STAT = 0x04;
-    static constexpr u8 STATUS_CHG_STAT_SHIFT = 3u;
-    static constexpr u8 STATUS_CHG_STAT_MASK = 0x18;
-    static constexpr u8 STATUS_REV_SHIFT = 5u;
-    static constexpr u8 STATUS_REV_MASK = 0x60;
+    static constexpr u8 STATUS_THERM_STAT       = 0x01;
+    static constexpr u8 STATUS_PG_STAT          = 0x02;
+    static constexpr u8 STATUS_PPM_STAT         = 0x04;
+    static constexpr u8 STATUS_CHG_STAT_SHIFT   = 3u;
+    static constexpr u8 STATUS_CHG_STAT_MASK    = 0x18;
+    static constexpr u8 STATUS_REV_SHIFT        = 5u;
+    static constexpr u8 STATUS_REV_MASK         = 0x60;
 
-    static constexpr u8 CHG_PRE_CHARGE = 1;
-    static constexpr u8 CHG_CHARGING = 2;
-    static constexpr u8 CHG_CHARGE_DONE = 3;
+    static constexpr u8 CHG_PRE_CHARGE          = 1;
+    static constexpr u8 CHG_CHARGING            = 2;
+    static constexpr u8 CHG_CHARGE_DONE         = 3;
 
-    static constexpr u8 FAULT_SAFETY_TIMER = 1u << 2u;
-    static constexpr u8 FAULT_BATTERY = 1u << 3u;
-    static constexpr u8 FAULT_THERMAL_SHUTDOWN = 1u << 4u;
-    static constexpr u8 FAULT_INPUT = 1u << 5u;
-    static constexpr u8 FAULT_WATCHDOG = 1u << 6u;
+    static constexpr u8 FAULT_SAFETY_TIMER      = 1u << 2u;
+    static constexpr u8 FAULT_BATTERY           = 1u << 3u;
+    static constexpr u8 FAULT_THERMAL_SHUTDOWN  = 1u << 4u;
+    static constexpr u8 FAULT_INPUT             = 1u << 5u;
+    static constexpr u8 FAULT_WATCHDOG          = 1u << 6u;
+
+    lite::Twi&      twi_;
+    DeviceStatus    device_status_;
+    ReadStatus      last_read_status_ = { ReadStatus::ERR_NOT_INIT };
+
+    u8 revision_    = 0;
+    u8 last_status_ = 0;
+    u8 last_fault_  = 0;
 
     DeviceStatus init() {
         if (twi_.probe(I2C_ADDR).is_error()) {
@@ -209,23 +210,18 @@ private:
         if (!power_good(status)) {
             return { PowerState::ON_BATTERY };
         }
-
         if (temp_fault(status, fault)) {
             return { PowerState::TEMP_FAULT };
         }
-
         if (charge_fault(fault)) {
             return { PowerState::CHARGE_FAULT };
         }
-
         if (power_limited(status, fault)) {
             return { PowerState::POWER_LIMITED };
         }
-
         if (charging(status)) {
             return { PowerState::CHARGING };
         }
-
         return { PowerState::EXT_POWER };
     }
 
@@ -308,7 +304,6 @@ private:
         if (detail == nullptr || detail[0] == '\0') {
             return;
         }
-
         if (!text.empty()) {
             text.append(' ');
         }

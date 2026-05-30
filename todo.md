@@ -1,10 +1,10 @@
 # to do - personal notes
-- driver mp2667
+
+mp2667
 - charge settings
 - shipping mode
 - 1s-timer zufälliger 
 - cmd power
-- class result intern?
 
 - highside switch ws2812
 - lowside switch ir tx

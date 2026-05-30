@@ -94,7 +94,7 @@ struct MorseCmd {
             static_cast<int>(len),
             text
         );
-        return text_buffer.c_str();
+        return buffer;
     }
 };
 
@@ -108,21 +108,21 @@ struct IrRx {
         IrCode::Nec nec;
         if (code.decode_nec(nec)) {
             text.appendf("ir_rx %02X.%02X", nec.addr, nec.cmd);
-            return text.c_str();
+            return buffer;
         }
 
         if (code.is_repeat()) {
             text.append("ir_rx repeat");
-            return text.c_str();
+            return buffer;
         }
 
         if (code.is_invalid()) {
             text.append("ir_rx invalid");
-            return text.c_str();
+            return buffer;
         }
 
         text.appendf("ir_rx %08lX", static_cast<unsigned long>(code.raw()));
-        return text.c_str();
+        return buffer;
     }
 };    
 
@@ -132,7 +132,7 @@ struct LightLum {
     const char* fmt(char (&buffer)[N]) const {
         lite::TextBuffer text(buffer);
         text.appendf("light_lum %u", y);
-        return text.c_str();
+        return buffer;
     }
 };
 
@@ -144,7 +144,7 @@ struct LightRgb {
     const char* fmt(char (&buffer)[N]) const {
         lite::TextBuffer text(buffer);
         text.appendf("light_rgb #%02x%02x%02x", r, g, b);
-        return text.c_str();
+        return buffer;
     }
 };
 
@@ -155,7 +155,7 @@ struct Temp {
     const char* fmt(char (&buffer)[N]) const {
         lite::TextBuffer text(buffer);
         text.appendf("temp %d.%d°C", int(celsius10) / 10, int(celsius10) % 10);
-        return text.c_str();
+        return buffer;
     }
 };
 
@@ -167,7 +167,7 @@ struct Tilt {
     const char* fmt(char (&buffer)[N]) const {
         lite::TextBuffer text(buffer);
         text.appendf("tilt pitch=%u roll=%u", pitch, roll);
-        return text.c_str();
+        return buffer;
     }
 };
 
@@ -179,7 +179,7 @@ struct HotspotStarted {
         char ip_buf[16];
         lite::TextBuffer text(buffer);
         text.appendf("hotspot_started ip=%s", ip.fmt(ip_buf));
-        return text.c_str();
+        return buffer;
     }
 };
 
@@ -190,7 +190,7 @@ struct HotspotFailed {
     const char* fmt(char (&buffer)[N]) const {
         lite::TextBuffer text(buffer);
         text.appendf("hotspot_failed %s", status.str());
-        return text.c_str();
+        return buffer;
     }
 };
 
@@ -201,7 +201,7 @@ struct HotspotClientCount {
     const char* fmt(char (&buffer)[N]) const {
         lite::TextBuffer text(buffer);
         text.appendf("hotspot_client_count %u", count);
-        return text.c_str();
+        return buffer;
     }
 };
 
@@ -209,7 +209,7 @@ template <size_t N>
 const char* fmt_power_state(char (&buffer)[N], PowerState state) {
     lite::TextBuffer text(buffer);
     text.appendf("power_state %s", state.str());
-    return text.c_str();
+    return buffer;
 }
 
 //-----------------------------------------------------------------------------
@@ -262,7 +262,7 @@ struct Event {
         }
         lite::TextBuffer text(buffer);
         text.appendf("event %s", id.str());
-        return text.c_str();
+        return buffer;
     }
 };
 

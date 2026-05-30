@@ -95,7 +95,7 @@ private:
             text.appendf(" (%s)", detail);
         }
 
-        return text.c_str();
+        return buffer;
     }
 };
 

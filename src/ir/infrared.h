@@ -47,7 +47,7 @@ class Infrared {
 using EventBus = event::Bus;
 
 public:
-    struct InfraredStatus : public lite::Status {
+    struct Status : public lite::Status {
         enum : u8 {
             OK = 0,
             SELFTEST_FAILED,
@@ -94,7 +94,7 @@ private:
     EventBus&   event_bus_;
     IrTx        ir_tx_;
     IrRx        ir_rx_;
-    InfraredStatus status_ = { InfraredStatus::OK };
+    Status      status_ = { Status::OK };
 
     lite::Timer timer_      { MSG_THIS(on_timer) };
     u8          cnt_        = 0;;
@@ -114,7 +114,7 @@ private:
         for (int i = 0; i < k_self_test_tries; ++i) {
             if ( try_self_test() ) return;
         }
-        status_ = { InfraredStatus::SELFTEST_FAILED };
+        status_ = { Status::SELFTEST_FAILED };
         LOG_ERROR("self test failed");
     }
 

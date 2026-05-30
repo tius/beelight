@@ -22,7 +22,7 @@ class AccMeter {
 using EventBus = event::Bus;
 
 public:
-    struct MeterStatus : public lite::Status {
+    struct Status : public lite::Status {
         enum : u8 {
             OK = 0,
             SENSOR_ERROR,
@@ -46,16 +46,16 @@ public:
         }
         else {
             LOG_ERROR("bma253 init failed: %s", acc_.status().str());
-            device_status_ = { MeterStatus::SENSOR_ERROR };
+            status_ = { Status::SENSOR_ERROR };
         }
     }
 
     operator bool() const noexcept {
-        return device_status_.is_ok();
+        return status_.is_ok();
     }
 
-    MeterStatus status() const noexcept {
-        return device_status_;
+    Status status() const noexcept {
+        return status_;
     }
 
 //------------------------------------------------------------------------------    
@@ -63,7 +63,7 @@ private:
     EventBus&       event_bus_;
     lite::Timer     timer_acc_;
     Bma253          acc_;
-    MeterStatus     device_status_;
+    Status          status_;
     u8              roll_last_ = 128u;
 
     static constexpr float k_rad_to_deg = 57.2957795131f;

@@ -28,7 +28,7 @@ public:
         const char* str() const noexcept {
             switch (code) {
                 case ERR_PROBE:         return "probe failed";
-                case ERR_ID_READ:       return "id read failed";
+                case ERR_ID_READ:       return "read id failed";
                 case ERR_ID_VALUE:      return "id mismatch";
                 case ERR_CFG_WRITE:     return "config write failed";
                 case ERR_ENABLE_WRITE:  return "enable write failed";
@@ -42,15 +42,15 @@ public:
             OK = 0,
             NOT_READY,
             ERR_NOT_INIT,
-            ERR_STATUS_READ,
-            ERR_DATA_READ
+            ERR_READ_STATUS,
+            ERR_READ_DATA
         };
         const char* str() const noexcept {
             switch (code) {
                 case NOT_READY:         return "not ready";
                 case ERR_NOT_INIT:      return "not initialized";
-                case ERR_STATUS_READ:   return "status read failed";
-                case ERR_DATA_READ:     return "data read failed";
+                case ERR_READ_STATUS:   return "read status failed";
+                case ERR_READ_DATA:     return "read data failed";
                 default:                return lite::Status::str();
             }
         }
@@ -88,7 +88,7 @@ public:
 
         u8 status = 0;
         if (!read_reg_u8(REG_STATUS, status)) {
-            return { .read_state = { ReadStatus::ERR_STATUS_READ } };
+            return { .read_state = { ReadStatus::ERR_READ_STATUS } };
         }
 
         if ((status & STATUS_AVALID) == 0) {
@@ -98,7 +98,7 @@ public:
         u16 d[4];
         for (int i = 0; i < 4; i++) {
             if (!read_reg_u16(REG_CDATAL + (i * 2u), d[i])) {
-                return { .read_state = { ReadStatus::ERR_DATA_READ } };
+                return { .read_state = { ReadStatus::ERR_READ_DATA } };
             }
         }
         return {

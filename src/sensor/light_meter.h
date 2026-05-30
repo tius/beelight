@@ -51,7 +51,7 @@ using EventBus = event::Bus;
 #endif
 
 public:
-    struct MeterStatus : public lite::Status {
+    struct Status : public lite::Status {
         enum : u8 {
             OK = 0,
             SENSOR_ERROR,
@@ -74,15 +74,16 @@ public:
         }
         else {
             LOG_ERROR("init failed: %s", sensor_.status().str());
-            device_status_ = { MeterStatus::SENSOR_ERROR };
+            status_ = { Status::SENSOR_ERROR };
         }
     }
 
     operator bool() const noexcept {
-        return device_status_.is_ok();
+        return status_.is_ok();
     }
-    auto status() const noexcept {
-        return device_status_;
+
+    Status status() const noexcept {
+        return status_;
     }
 
 //------------------------------------------------------------------------------    
@@ -90,7 +91,7 @@ private:
     EventBus&       event_bus_;
     lite::Timer     timer_sensor_;
     Driver    sensor_;
-    MeterStatus    device_status_;
+    Status    status_;
 
     //--------------------------------------------------------------------------
     void on_timer() {

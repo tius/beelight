@@ -26,7 +26,7 @@ public:
         const char* str() const noexcept {
             switch (code) {
                 case ERR_PROBE:     return "probe failed";
-                case ERR_CFG_WRITE: return "config write failed";
+                case ERR_CFG_WRITE: return "write config failed";
                 default:            return lite::Status::str();
             }
         }
@@ -36,13 +36,13 @@ public:
         enum : u8 {
             OK = 0,
             ERR_NOT_INIT,
-            ERR_DATA_READ,
+            ERR_READ_DATA,
         };
 
         const char* str() const noexcept {
             switch (code) {
                 case ERR_NOT_INIT:  return "not initialized";
-                case ERR_DATA_READ: return "data read failed";
+                case ERR_READ_DATA: return "data read failed";
                 default:            return lite::Status::str();
             }
         }
@@ -87,7 +87,7 @@ public:
             || !read_reg_u16(REG_B_DATA, b)
             || !read_reg_u16(REG_C_DATA, y)
         ) {
-            return { .read_state = { ReadStatus::ERR_DATA_READ } };
+            return { .read_state = { ReadStatus::ERR_READ_DATA } };
         }
 
         return {

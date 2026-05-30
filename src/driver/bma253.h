@@ -27,7 +27,7 @@ public:
             ERR_PROBE,
             ERR_ID_READ,
             ERR_ID_VALUE,
-            ERR_CFG_WRITE
+            ERR_WRITE_CFG
         };
 
         const char* str() const noexcept {
@@ -35,7 +35,7 @@ public:
                 case ERR_PROBE:         return "probe failed";
                 case ERR_ID_READ:       return "read id failed";
                 case ERR_ID_VALUE:      return "id mismatch";
-                case ERR_CFG_WRITE:     return "config write failed";
+                case ERR_WRITE_CFG:     return "write config failed";
                 default:                return lite::Status::str();
             }
         }
@@ -142,7 +142,7 @@ private:
                 !write_reg_u8(REG_PMU_RANGE, RANGE_2G)
             || !write_reg_u8(REG_PMU_BW, BW_62_HZ)
         ) {
-            return { DeviceStatus::ERR_CFG_WRITE };
+            return { DeviceStatus::ERR_WRITE_CFG };
         }
 
         return { DeviceStatus::OK };

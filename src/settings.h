@@ -124,5 +124,19 @@
 //==============================================================================
 //  mp2667 driver settings
 //------------------------------------------------------------------------------
-#define MP2667_I2C_ADDR         0x09        // I2C address of mp2667 charger
 #define MP2667_LOG              none        // log level for mp2667 events
+#define MP2667_I2C_ADDR         0x09        // I2C address of mp2667 charger
+#define MP2667_INPUT_MIN_MV     4600        // input voltage regulation limit
+#define MP2667_INPUT_MA         470         // input current limit
+#define MP2667_CHARGE_MA        257        // fast charge current
+#define MP2667_TERM_MA          52          // charge termination current
+#define MP2667_DISCHARGE_MA     1000    // battery discharge current limit
+#define MP2667_BATTERY_REG_MV   4200        // battery regulation voltage
+#define MP2667_BATTERY_UVLO_MV  2800        // battery discharge cutoff threshold
+#define MP2667_PRECHARGE_MV     3000        // pre-charge to fast-charge threshold
+#define MP2667_RECHARGE_MV      300         // recharge threshold below regulation
+#define MP2667_WATCHDOG_S       0           // I2C watchdog timeout, 0 disables it
+#define MP2667_SAFETY_TIMER_H   12          // fast charge safety timer
+#define MP2667_TMR2X_ENABLED    true        // extend safety timer during PPM
+#define MP2667_THERMAL_REG_C    100         // thermal regulation threshold
+#define MP2667_NTC_ENABLED      false       // no thermistor connected

@@ -28,7 +28,7 @@
 //==============================================================================
 //   event logger settings
 //------------------------------------------------------------------------------
-#define EVENT_LOG               debug       // enable event logging
+#define EVENT_LOG               none        // enable event logging
 #define EVENT_QUEUE_SIZE        8           // async event fifo capacity
 
 //==============================================================================
@@ -85,6 +85,11 @@
 #define I2C_CLOCK_HZ            400000      // I2C clock speed in hertz
 
 //==============================================================================
+//  power settings
+//------------------------------------------------------------------------------
+#define POWER_LOG               debug       // log level for power events
+
+//==============================================================================
 //  light sensor settings
 //------------------------------------------------------------------------------
 #define LIGHT_SENSOR_LOG        none        // log level for light sensor events
@@ -115,3 +120,9 @@
 //  bma253 driver settings
 //------------------------------------------------------------------------------
 #define BMA253_LOG              none        // log level for bma253 events
+
+//==============================================================================
+//  mp2667 driver settings
+//------------------------------------------------------------------------------
+#define MP2667_I2C_ADDR         0x09        // I2C address of mp2667 charger
+#define MP2667_LOG              none        // log level for mp2667 events

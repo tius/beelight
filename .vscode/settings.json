@@ -8,6 +8,9 @@
         "/^& \"\\$env:USERPROFILE\\\\\\.platformio\\\\penv\\\\Scripts\\\\pio\\.exe\" run -e bee_rysta$/": {
             "approve": true,
             "matchCommandLine": true
-        }
-    }
+        },
+        "Test-Path": true,
+        "Get-Item": true
+    },
+    "cmake.sourceDirectory": "D:/proj/lite/beelight/lib/litekit"
 }

@@ -1,15 +1,23 @@
 # to do - personal notes
-- ap / station / wps
-- ota
+- driver mp2667
+- charge settings
+- shipping mode
+- 1s-timer zufälliger 
+- cmd power
 
+- highside switch ws2812
+- lowside switch ir tx
+
+- light sense status led
+- ota
+- httpd?
+- station / wps
+
+## yagni
+- flash mem für cli, logging
 
 ## next steps
-- status led für fehler
-- button
-
-
-### status rgb
-- boot-status sensoren via eventbus
+- status led für sensorfehler
 
 ## build
 - tests build
@@ -21,9 +29,6 @@
 - ux dokument aufteilen
 
 ## schaltung
-- ir tx an vled statt 3v3
-- ir rx an vled statt 3v3?
-- ext. ws2812 an 5v
 - ansteuerung high-side switch über tiefpass prüfen
 - int und gpout via diodes prüfen
 

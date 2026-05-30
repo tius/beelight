@@ -11,6 +11,7 @@
 #include "event/event.h"
 #include "front_leds/front_show.h"
 #include "ir/infrared.h"
+#include "power/power.h"
 #include "sensor/light_meter.h"
 #include "sensor/acc_meter.h"
 #include "wake/wake_morse.h"
@@ -39,6 +40,9 @@ public:
         }
         if (!infrared_) {
             LOG_ERROR("infrared not responding: %s", infrared_.status().str());
+        }
+        if (!power_) {
+            LOG_ERROR("power not available: %s", power_.status().str());
         }
 
         core_.ready();
@@ -72,6 +76,7 @@ private:
     LightMeter          light_meter_{twi_, core_.event_bus()};
     AccMeter            acc_meter_  {twi_, core_.event_bus()};
     Infrared            infrared_   {core_.event_bus()};
+    Power               power_      {twi_, core_.event_bus()};
     FrontShow          front_show_  {core_.front_leds()};
 
     lite::Timer         timer_      { MSG_THIS(on_timer) };

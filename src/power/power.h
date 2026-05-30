@@ -7,6 +7,7 @@
 #include "event/event.h"
 #include "driver/mp2667.h"
 
+#include "lite/core/changed.h"
 #include "lite/core/status.h"
 #include "lite/core/text_buffer.h"
 #include "lite/core/timer.h"
@@ -23,7 +24,7 @@ using u8 = lite::u8;
 
 //------------------------------------------------------------------------------
 public:
-    struct PowerStatus : public lite::Status {
+    struct Status : public lite::Status {
         enum : u8 {
             OK = 0,
             CHARGER_ERROR,
@@ -49,7 +50,7 @@ public:
         }
         else {
             LOG_ERROR("mp2667 init failed: %s", charger_.status().str());
-            status_ = { PowerStatus::CHARGER_ERROR };
+            status_ = { Status::CHARGER_ERROR };
         }
     }
 
@@ -57,7 +58,7 @@ public:
         return status_.is_ok();
     }
 
-    PowerStatus status() const noexcept {
+    Status status() const noexcept {
         return status_;
     }
 
@@ -66,7 +67,8 @@ private:
     EventBus& event_bus_;
     lite::Timer timer_;
     Mp2667 charger_;
-    PowerStatus status_;
+    Status status_;
+    PowerState published_state_;
 
     void on_timer() {
         const auto result = charger_.read_status();
@@ -75,12 +77,20 @@ private:
             return;
         }
 
+        if (!update_published_state(result.state)) {
+            return;
+        }
+
         char buffer[64];
         LOG_INFO("power state: %s", fmt_result(buffer, result));
 
         event_bus_.publish({ event::Id::POWER_STATE, { .power_state =
-            result.state
+            published_state_
         }});
+    }
+
+    bool update_published_state(PowerState state) {
+        return lite::changed(published_state_, state);
     }
 
     template <std::size_t N>

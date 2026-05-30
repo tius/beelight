@@ -33,7 +33,7 @@ public:
         const char* str() const noexcept {
             switch (code) {
                 case ERR_PROBE:         return "probe failed";
-                case ERR_ID_READ:       return "id read failed";
+                case ERR_ID_READ:       return "read id failed";
                 case ERR_ID_VALUE:      return "id mismatch";
                 case ERR_CFG_WRITE:     return "config write failed";
                 default:                return lite::Status::str();
@@ -45,13 +45,13 @@ public:
         enum : u8 {
             OK = 0,
             ERR_NOT_INIT,
-            ERR_DATA_READ
+            ERR_READ_DATA
         };
 
         const char* str() const noexcept {
             switch (code) {
                 case ERR_NOT_INIT:      return "not initialized";
-                case ERR_DATA_READ:     return "data read failed";
+                case ERR_READ_DATA:     return "read data failed";
                 default:                return lite::Status::str();
             }
         }
@@ -94,7 +94,7 @@ public:
         } raw = {};
 
         if (twi_.write_read(I2C_ADDR, REG_ACC_X_LSB, raw).is_error()) {
-            return { .read_state = { ReadStatus::ERR_DATA_READ } };
+            return { .read_state = { ReadStatus::ERR_READ_DATA } };
         }
 
         return {

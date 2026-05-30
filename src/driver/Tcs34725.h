@@ -22,16 +22,16 @@ public:
             ERR_PROBE,
             ERR_ID_READ,
             ERR_ID_VALUE,
-            ERR_CFG_WRITE,
-            ERR_ENABLE_WRITE
+            ERR_WRITE_CFG,
+            ERR_WRITE_ENABLE
         };
         const char* str() const noexcept {
             switch (code) {
                 case ERR_PROBE:         return "probe failed";
                 case ERR_ID_READ:       return "read id failed";
                 case ERR_ID_VALUE:      return "id mismatch";
-                case ERR_CFG_WRITE:     return "config write failed";
-                case ERR_ENABLE_WRITE:  return "enable write failed";
+                case ERR_WRITE_CFG:     return "write config failed";
+                case ERR_WRITE_ENABLE:  return "write enable failed";
                 default:                return lite::Status::str();
             }
         }
@@ -174,7 +174,7 @@ private:
             || !write_reg_u8(REG_ENABLE, ENABLE_PON)
         ) {
             LOG_WARN("config failed");
-            return { DeviceStatus::ERR_CFG_WRITE };
+            return { DeviceStatus::ERR_WRITE_CFG };
         }
 
         delay(3);
@@ -184,7 +184,7 @@ private:
             ENABLE_PON | ENABLE_AEN
         )) {
             LOG_WARN("enable failed");
-            return { DeviceStatus::ERR_ENABLE_WRITE };
+            return { DeviceStatus::ERR_WRITE_ENABLE };
         }
         return { DeviceStatus::OK };
     }

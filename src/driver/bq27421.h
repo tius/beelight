@@ -252,13 +252,12 @@ public:
         }
 
         text.appendf(
-            "%umv soc=%u%% quality=%u%% rem=%umAh fcc=%umAh avg=%dmA flags=0x%04X",
+            "%umv %dmA, %u%% of %umAh (quality=%u%%, flags=0x%04X)",
             static_cast<unsigned>(last_state_.voltage_mv),
-            static_cast<unsigned>(last_state_.soc_percent),
-            static_cast<unsigned>(last_state_.quality_percent()),
-            static_cast<unsigned>(last_state_.remaining_capacity_mah),
-            static_cast<unsigned>(last_state_.full_charge_capacity_mah),
             static_cast<int>(last_state_.average_current_ma),
+            static_cast<unsigned>(last_state_.soc_percent),
+            static_cast<unsigned>(last_state_.full_charge_capacity_mah),
+            static_cast<unsigned>(last_state_.quality_percent()),
             static_cast<unsigned>(last_state_.flags)
         );
         return buffer;

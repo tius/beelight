@@ -1,9 +1,8 @@
 # to do - personal notes
 
 mp2667
-- shipping mode: not charging
-- 1s-timer zufälliger 
-- cmd power
+- off via button
+
 
 - highside switch ws2812
 - lowside switch ir tx
@@ -12,6 +11,9 @@ mp2667
 - ota
 - httpd?
 - station / wps
+
+## toolkit
+- clean-up logging
 
 ## yagni
 - flash mem für cli, logging

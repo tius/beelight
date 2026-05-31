@@ -17,6 +17,7 @@
 #include "lite/io/serial_out.h"
 #include "lite/io/log.h"
 #include "lite/sys/clock.h"
+#include "lite/core/compile_time.h"
 #include "lite/core/timer.h"
 #include "lite/cmd/sys_cmd.h"
 #include "lite/cmd/twi_cmd.h"
@@ -26,6 +27,8 @@
 
 //==============================================================================
 class RuntimeCore final {
+
+using u32 = lite::u32;    
 //------------------------------------------------------------------------------
 public:
     RuntimeCore() {
@@ -74,13 +77,31 @@ public:
         return twi_;
     }
 
+    lite::duration_ms next_timer_offset() noexcept {
+        timer_offset_ += k_timer_offset_step;
+        if (timer_offset_ >= k_timer_offset_period) {
+            timer_offset_ -= k_timer_offset_period;
+        }
+        return lite::duration_ms{timer_offset_};
+    }
+
 //------------------------------------------------------------------------------
 private:
+    static constexpr u32 k_timer_offset_period  = 1000u;
+    static constexpr u32 k_timer_offset_step    = 377u;
+
+    static_assert(
+        1 == lite::gcd_u32( k_timer_offset_period, k_timer_offset_step ),
+        "timer offset step must be coprime with period"
+    );
+
     using AppLogger = lite::CustomLogger<
         LOG_ANSI_COLOR,
         LOG_TIMESTAMP,
         LOG_LEVEL_PREFIX
     >;
+
+    u32                timer_offset_ = 0u;
 
     event::Bus         event_bus_   {};
     event::Queue       event_queue_ {event_bus_};
@@ -98,7 +119,7 @@ private:
     lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
     lite::cmd::TwiCmd   twi_cmd_    {shell_, twi_};
 
-    Power               power_      {twi_, event_bus_};
+    Power               power_      {twi_, event_bus_, next_timer_offset()};
 
     BackLed            back_led_   {};
     BackShow           back_show_  {back_led_, event_bus_};

@@ -36,13 +36,17 @@ public:
         }
     };
 
-    AccMeter(lite::Twi& twi, EventBus& event_bus)
+    AccMeter(
+        lite::Twi& twi,
+        EventBus& event_bus,
+        lite::duration_ms timer_offset
+    )
         : event_bus_(event_bus)
         , timer_acc_(MSG_THIS(on_timer))
         , acc_(twi)
     {
         if (acc_) {
-            timer_acc_.start_periodic(1s);
+            timer_acc_.start_periodic(1s, timer_offset);
         }
         else {
             LOG_ERROR("bma253 init failed: %s", acc_.status().str());

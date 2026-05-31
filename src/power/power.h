@@ -39,7 +39,11 @@ public:
         }
     };
 
-    Power(lite::Twi& twi, EventBus& event_bus)
+    Power(
+        lite::Twi& twi,
+        EventBus& event_bus,
+        lite::duration_ms timer_offset
+    )
         : event_bus_(event_bus)
         , timer_(MSG_THIS(on_timer))
         , charger_(twi)
@@ -47,7 +51,7 @@ public:
         if (charger_) {
             char device_info[32];
             LOG_INFO("%s", charger_.fmt_device_info(device_info));
-            timer_.start_periodic(1s);
+            timer_.start_periodic(1s, timer_offset);
         }
         else {
             LOG_ERROR("mp2667 init failed: %s", charger_.status().str());

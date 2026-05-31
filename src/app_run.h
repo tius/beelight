@@ -67,8 +67,16 @@ private:
     WakeInfo<WakeMorse> wake_info_  {rtc::wake_uptime(), wake_morse_};
     event::Hook         boot_hook_  {core_.event_bus(), METHOD_THIS(on_event)};
 
-    LightMeter          light_meter_{core_.twi(), core_.event_bus()};
-    AccMeter            acc_meter_  {core_.twi(), core_.event_bus()};
+    LightMeter          light_meter_{
+        core_.twi(),
+        core_.event_bus(),
+        core_.next_timer_offset()
+    };
+    AccMeter            acc_meter_  {
+        core_.twi(),
+        core_.event_bus(),
+        core_.next_timer_offset()
+    };
     Infrared            infrared_   {core_.event_bus()};
     FrontShow          front_show_  {core_.front_leds()};
 

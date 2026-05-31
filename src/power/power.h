@@ -71,17 +71,13 @@ public:
         return charger_.read_status();
     }
 
-    void shutdown() {
+    void battery_off() {
         LOG_INFO("entering shipping mode");
         flush_output();
 
         if (!charger_.enter_shipping_mode()) {
             LOG_ERROR("shipping mode failed");
-            flush_output();
         }
-
-        delay(1000);
-        lite::sys::deep_sleep();
     }
 
     template <std::size_t N>

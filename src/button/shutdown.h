@@ -1,4 +1,4 @@
-//  manage button-triggered shutdown
+//  manage button-triggered battery_off
 //
 //  see LICENSE file for terms
 
@@ -18,7 +18,7 @@ class ButtonShutdown final {
 public:
     ButtonShutdown(lite::CmdShell& shell, Power& power)
         : power_(power)
-        , cmd_off_(shell, "off", "shutdown system", "", METHOD_THIS(on_cmd_off))
+        , cmd_off_(shell, "off", "turn battery off", "", METHOD_THIS(on_cmd_off))
     {
         timer_.start(lite::duration_ms{BUTTON_SHUTDOWN_HOLD_MS});
     }
@@ -38,16 +38,12 @@ private:
 
     void on_timer() {
         if ( button_is_down() ) {
-            shutdown();
+            power_.battery_off();
         }
     }
 
     void on_cmd_off(lite::Out&, lite::Args) {
-        shutdown();
-    }
-
-    void shutdown() {
-        power_.shutdown();
+        power_.battery_off();
     }
 };
 

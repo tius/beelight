@@ -57,7 +57,8 @@ private:
         .lease_end      = HOTSPOT_LEASE_END,
     };
 
-    RuntimeCore core_ {};
+    event::Bus event_bus_ {};
+    RuntimeCore core_ {event_bus_};
     lite::esp8266::Hotspot hotspot_ {};
     char ssid_[SSID_SIZE] {};
     lite::u8 client_count_ = 0u;

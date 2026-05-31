@@ -11,6 +11,7 @@
 #include "event/event.h"
 #include "event/logger.h"
 #include "front_leds/front_leds.h"
+#include "power/battery.h"
 #include "power/power.h"
 
 #include "lite/cli/cmd.h"
@@ -29,12 +30,18 @@
 //==============================================================================
 class RuntimeCore final {
 
-using u32 = lite::u32;    
+using u32 = lite::u32;
+using EventBus = event::Bus;
 //------------------------------------------------------------------------------
 public:
-    RuntimeCore() {
+    explicit RuntimeCore(EventBus& event_bus)
+        : event_bus_(event_bus)
+    {
         if (!power_) {
             LOG_ERROR("power not available: %s", power_.status().str());
+        }
+        if (!battery_) {
+            LOG_ERROR("battery not available: %s", battery_.status().str());
         }
     }
 
@@ -104,7 +111,7 @@ private:
 
     u32                 timer_offset_ = 0u;
 
-    event::Bus          event_bus_   {};
+    EventBus&           event_bus_;
     event::Queue        event_queue_ {event_bus_};
 
     lite::Uart          uart_       {MONITOR_SPEED};
@@ -120,8 +127,9 @@ private:
     lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
     lite::cmd::TwiCmd   twi_cmd_    {shell_, twi_};
 
+    Battery             battery_    {twi_, event_bus_, next_timer_offset()};
     Power               power_      {twi_, event_bus_, next_timer_offset()};
-    ButtonShutdown      shutdown_   {shell_, power_};
+    ButtonShutdown      shutdown_   {shell_, power_, battery_};
 
     BackLed             back_led_   {};
     BackShow            back_show_  {back_led_, event_bus_};

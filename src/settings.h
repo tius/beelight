@@ -95,6 +95,14 @@
 #define POWER_LOG               debug       // log level for power events
 
 //==============================================================================
+//  battery settings
+//------------------------------------------------------------------------------
+#define BATTERY_LOG             trace       // log level for battery events
+#define BATTERY_SAMPLE_MS       5000        // gauge polling interval
+#define BATTERY_LOW_SOC_PERCENT 20          // low battery threshold
+#define BATTERY_CRIT_SOC_PERCENT 5          // critical battery threshold
+
+//==============================================================================
 //  light sensor settings
 //------------------------------------------------------------------------------
 #define LIGHT_SENSOR_LOG        none        // log level for light sensor events
@@ -145,3 +153,13 @@
 #define MP2667_TMR2X_ENABLED    true        // extend safety timer during PPM
 #define MP2667_THERMAL_REG_C    100         // thermal regulation threshold
 #define MP2667_NTC_ENABLED      false       // no thermistor connected
+
+//==============================================================================
+//  bq27421 driver settings
+//------------------------------------------------------------------------------
+#define BQ27421_LOG             trace       // log level for bq27421 events
+#define BQ27421_I2C_ADDR        0x55        // I2C address of battery gauge
+#define BQ27421_DESIGN_CAP_MAH  500         // nominal cell capacity
+#define BQ27421_TERM_VOLTAGE_MV 3000        // empty voltage threshold
+#define BQ27421_TAPER_MA        MP2667_TERM_MA // charge taper current
+#define BQ27421_CHARGE_DETECT_MA 5          // signed current charge threshold

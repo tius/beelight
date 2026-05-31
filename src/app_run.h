@@ -61,23 +61,24 @@ public:
 
 //------------------------------------------------------------------------------
 private:
-    RuntimeCore         core_       {};
-
-    WakeMorse           wake_morse_ {rtc::wake_morse(), core_.event_bus()};
+    event::Bus          event_bus_  {};
+    WakeMorse           wake_morse_ {rtc::wake_morse(), event_bus_};
     WakeInfo<WakeMorse> wake_info_  {rtc::wake_uptime(), wake_morse_};
-    event::Hook         boot_hook_  {core_.event_bus(), METHOD_THIS(on_event)};
+
+    RuntimeCore         core_       {event_bus_};
+    event::Hook         boot_hook_  {event_bus_, METHOD_THIS(on_event)};
 
     LightMeter          light_meter_{
         core_.twi(),
-        core_.event_bus(),
+        event_bus_,
         core_.next_timer_offset()
     };
     AccMeter            acc_meter_  {
         core_.twi(),
-        core_.event_bus(),
+        event_bus_,
         core_.next_timer_offset()
     };
-    Infrared            infrared_   {core_.event_bus()};
+    Infrared            infrared_   {event_bus_};
     FrontShow          front_show_  {core_.front_leds()};
 
     lite::Timer         timer_      { MSG_THIS(on_timer) };

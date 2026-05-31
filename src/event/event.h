@@ -9,6 +9,7 @@
 #include "power/power_state.h"
 
 #include "lite/core/types.h"
+#include "lite/core/bits.h"
 #include "lite/core/fsm.h"
 #include "lite/core/event_bus.h"
 #include "lite/core/event_queue.h"
@@ -37,6 +38,7 @@ struct Id : public lite::fsm::EventId {
         TEMP,
         TILT,
         POWER_STATE,
+        BATTERY_INFO,
         HOTSPOT_STARTED,
         HOTSPOT_FAILED,
         HOTSPOT_CLIENT_COUNT,
@@ -53,6 +55,7 @@ struct Id : public lite::fsm::EventId {
             case TEMP:                  return "TEMP";
             case TILT:                  return "TILT";
             case POWER_STATE:           return "POWER_STATE";
+            case BATTERY_INFO:          return "BATTERY_INFO";
             case HOTSPOT_STARTED:       return "HOTSPOT_STARTED";
             case HOTSPOT_FAILED:        return "HOTSPOT_FAILED";
             case HOTSPOT_CLIENT_COUNT:  return "HOTSPOT_CLIENT_COUNT";
@@ -98,6 +101,8 @@ struct MorseCmd {
     }
 };
 
+static_assert(sizeof(MorseCmd) <= 4, "unexpected size of event::MorseCmd");
+
 struct IrRx {
     IrCode code;
 
@@ -126,6 +131,8 @@ struct IrRx {
     }
 };    
 
+static_assert(sizeof(IrRx) <= 4, "unexpected size of event::IrRx");
+
 struct LightLum {
     u8      y;
     template <size_t N>
@@ -135,6 +142,8 @@ struct LightLum {
         return buffer;
     }
 };
+
+static_assert(sizeof(LightLum) <= 4, "unexpected size of event::LightLum");
 
 struct LightRgb {
     u8      r;
@@ -148,6 +157,8 @@ struct LightRgb {
     }
 };
 
+static_assert(sizeof(LightRgb) <= 4, "unexpected size of event::LightRgb");
+
 struct Temp {
     s16 celsius10;
 
@@ -158,6 +169,8 @@ struct Temp {
         return buffer;
     }
 };
+
+static_assert(sizeof(Temp) <= 4, "unexpected size of event::Temp");
 
 struct Tilt {
     u8 pitch;
@@ -171,6 +184,8 @@ struct Tilt {
     }
 };
 
+static_assert(sizeof(Tilt) <= 4, "unexpected size of event::Tilt");
+
 struct HotspotStarted {
     lite::Ipv4 ip;
 
@@ -183,6 +198,11 @@ struct HotspotStarted {
     }
 };
 
+static_assert(
+    sizeof(HotspotStarted) <= 4,
+    "unexpected size of event::HotspotStarted"
+);
+
 struct HotspotFailed {
     lite::esp8266::HotspotStatus status;
 
@@ -194,6 +214,11 @@ struct HotspotFailed {
     }
 };
 
+static_assert(
+    sizeof(HotspotFailed) <= 4,
+    "unexpected size of event::HotspotFailed"
+);
+
 struct HotspotClientCount {
     u8 count;
 
@@ -204,6 +229,93 @@ struct HotspotClientCount {
         return buffer;
     }
 };
+
+static_assert(
+    sizeof(HotspotClientCount) <= 4,
+    "unexpected size of event::HotspotClientCount"
+);
+
+struct BatteryInfo {
+    s16 current_ma  = 0;
+    u8 soc_percent  = 0;
+    u8 flags        = 0;
+
+    constexpr BatteryInfo() noexcept = default;
+
+    constexpr BatteryInfo(
+        u8 soc_percent,
+        s16 current_ma,
+        bool charging,
+        bool discharging,
+        bool low_soc,
+        bool critical_soc
+    ) noexcept
+        : current_ma(current_ma)
+        , soc_percent(soc_percent)
+        , flags(VALID)
+    {
+        lite::set_bit(flags, CHARGING, charging);
+        lite::set_bit(flags, DISCHARGING, discharging);
+        lite::set_bit(flags, LOW_SOC, low_soc);
+        lite::set_bit(flags, CRIT_SOC, critical_soc);
+    }
+
+    static constexpr BatteryInfo error() noexcept {
+        BatteryInfo info = {};
+        lite::set_bit(info.flags, GAUGE_ERROR);
+        return info;
+    }
+
+    constexpr bool operator==(const BatteryInfo& other) const noexcept {
+        return soc_percent == other.soc_percent
+            && current_ma == other.current_ma
+            && flags == other.flags;
+    }
+
+    template <size_t N>
+    const char* fmt(char (&buffer)[N]) const {
+        lite::TextBuffer text(buffer);
+
+        if (lite::bit_is_hi(flags, GAUGE_ERROR)) {
+            text.append("battery_info gauge_error");
+            return buffer;
+        }
+
+        text.appendf(
+            "battery_info soc=%u%% current=%+dmA",
+            static_cast<unsigned>(soc_percent),
+            static_cast<int>(current_ma)
+        );
+        if (lite::bit_is_hi(flags, CHARGING)) {
+            text.append(" charging");
+        }
+        if (lite::bit_is_hi(flags, DISCHARGING)) {
+            text.append(" discharging");
+        }
+        if (lite::bit_is_hi(flags, CRIT_SOC)) {
+            text.append(" critical");
+        }
+        else if (lite::bit_is_hi(flags, LOW_SOC)) {
+            text.append(" low");
+        }
+
+        return buffer;
+    }
+
+private:
+    enum Flag : unsigned {
+        VALID = 0,
+        LOW_SOC,
+        CRIT_SOC,
+        CHARGING,
+        DISCHARGING,
+        GAUGE_ERROR = 7,
+    };
+};
+
+static_assert(sizeof(BatteryInfo) == 4, "unexpected size of event::BatteryInfo");
+
+static_assert(sizeof(PowerState) <= 4, "unexpected size of PowerState");
 
 template <size_t N>
 const char* fmt_power_state(char (&buffer)[N], PowerState state) {
@@ -222,6 +334,7 @@ struct Payload {
         Tilt                tilt;
         Temp                temp;
         PowerState          power_state;
+        BatteryInfo         battery_info;
         HotspotStarted      hotspot_started;
         HotspotFailed       hotspot_failed;
         HotspotClientCount  hotspot_client_count;
@@ -255,6 +368,7 @@ struct Event {
             case Id::TEMP:              return p1.temp.fmt(buffer);
             case Id::POWER_STATE:
                 return fmt_power_state(buffer, p1.power_state);
+            case Id::BATTERY_INFO:      return p1.battery_info.fmt(buffer);
             case Id::HOTSPOT_STARTED:   return p1.hotspot_started.fmt(buffer);
             case Id::HOTSPOT_FAILED:    return p1.hotspot_failed.fmt(buffer);
             case Id::HOTSPOT_CLIENT_COUNT:

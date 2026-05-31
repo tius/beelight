@@ -1,9 +1,9 @@
 # to do - personal notes
 
-mp2667
-- off via button
-
-
+hardware
+- hibernate mode
+- gpout pull-up 
+- bq*: messen, shutdown 
 - highside switch ws2812
 - lowside switch ir tx
 

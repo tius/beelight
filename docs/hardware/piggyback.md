@@ -66,18 +66,19 @@ visible product front.
 - MP2667 charger and power-path IC
 - BQ27421 fuel gauge
 - VOUT_MP2667 is the system 5V rail on Rysta
-- see [power.md](power.md) for charging, shutdown, wake, and status behavior
+- see [power.md](power.md) for charging, hibernate, wake, and status behavior
 
 ## off-mode wake wiring
 
 MP2667 and BQ27421 each have a dedicated control pin used as **input** on
 this board (not as output). Both pins are tied to the Rysta wake lines
-through diodes, so the existing rear button can wake them from off mode.
+through diodes. Normal firmware uses MP2667 shipping mode and BQ27421
+hibernate mode for off mode.
 
 - MP2667 `INT` (input) -- diode -- Rysta `GPIO 16` / WAKE line
 - BQ27421 `GPOUT` (input) -- diode -- Rysta `RST` line
 - diode parts: BAT54W for INT and GPOUT paths
-- see [power.md](power.md) for shipping and shutdown behavior
+- see [power.md](power.md) for shipping and hibernate behavior
 
 ## mechanical
 

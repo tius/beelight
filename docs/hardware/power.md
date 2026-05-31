@@ -28,8 +28,9 @@ see also:
 ### BQ27421
 
 - provides battery state telemetry
-- MCU enters shutdown mode via I2C
-- requirement: BQ27421 can leave shutdown mode only via GPOUT
+- MCU enters hibernate mode via I2C for off mode
+- shutdown mode is intentionally not used because it can discard learned battery
+	data and can make wake behavior unreliable
 
 ### WS2812 high-side switch
 
@@ -40,6 +41,7 @@ see also:
 - provides button-driven reset pulse generation on RST
 - wake signal is routed via diode to MP2667 INT
 - RST signal is routed via diode to BQ27421 GPOUT
+- BQ27421 GPOUT wake path remains wired but is not used in normal firmware
 
 ## power flow
 
@@ -104,8 +106,9 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 
 ## power off
 
-- MCU enters BQ27421 shutdown mode via I2C
+- MCU enters BQ27421 hibernate mode via I2C
 - MCU enters MP2667 shipping mode via I2C
+- BQ27421 shutdown mode is not used, to preserve learned battery data and
+	avoid wake problems
 - exit from shipping mode requires MP2667 INT
-- exit from shutdown mode requires BQ27421 GPOUT
 - current well below 10 uA is targeted

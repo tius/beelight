@@ -10,6 +10,7 @@
 
 #include "lite/core/types.h"
 #include "lite/core/bits.h"
+#include "lite/core/compile_time.h"
 #include "lite/core/fsm.h"
 #include "lite/core/event_bus.h"
 #include "lite/core/event_queue.h"
@@ -30,6 +31,7 @@ using lite::s16;
 
 //=============================================================================
 struct Id : public lite::fsm::EventId {
+//-----------------------------------------------------------------------------    
     enum : u8 {
         MORSE_CMD           = lite::fsm::EventId::COUNT_,
         IR_RX,
@@ -67,42 +69,34 @@ struct Id : public lite::fsm::EventId {
 static_assert(sizeof(Id) == 1, "unexpected size of event::Id");
 
 //=============================================================================
+//  payload definitions
+//-----------------------------------------------------------------------------
 struct MorseCmd {
     char text[3];
     u8 len;
 
     template <size_t N>
-    [[nodiscard]] bool is(const char (&value)[N]) const noexcept {
+    bool is(const char (&value)[N]) const noexcept {
         static_assert(N > 0u);
-        constexpr auto value_len = static_cast<u8>(N - 1u);
+        constexpr auto value_len = N - 1u;
 
-        if (len != value_len || value_len > sizeof(text)) {
+        if (value_len > sizeof(text) || len != value_len) {
             return false;
         }
-
-        for (u8 idx = 0; idx < value_len; ++idx) {
-            if (text[idx] != value[idx]) {
-                return false;
-            }
-        }
-
-        return true;
+        return lite::equal_n(text, value, value_len);
     }
 
     template <size_t N>
     const char* fmt(char (&buffer)[N]) const {
         lite::TextBuffer text_buffer(buffer);
-        text_buffer.appendf(
-            "morse_cmd %.*s",
-            static_cast<int>(len),
-            text
-        );
+        text_buffer.appendf("morse_cmd %.*s", static_cast<int>(len), text);
         return buffer;
     }
 };
 
 static_assert(sizeof(MorseCmd) <= 4, "unexpected size of event::MorseCmd");
 
+//-----------------------------------------------------------------------------
 struct IrRx {
     IrCode code;
 
@@ -133,6 +127,7 @@ struct IrRx {
 
 static_assert(sizeof(IrRx) <= 4, "unexpected size of event::IrRx");
 
+//-----------------------------------------------------------------------------
 struct LightLum {
     u8      y;
     template <size_t N>
@@ -145,6 +140,7 @@ struct LightLum {
 
 static_assert(sizeof(LightLum) <= 4, "unexpected size of event::LightLum");
 
+//-----------------------------------------------------------------------------
 struct LightRgb {
     u8      r;
     u8      g;
@@ -159,6 +155,7 @@ struct LightRgb {
 
 static_assert(sizeof(LightRgb) <= 4, "unexpected size of event::LightRgb");
 
+//-----------------------------------------------------------------------------
 struct Temp {
     s16 celsius10;
 
@@ -172,6 +169,7 @@ struct Temp {
 
 static_assert(sizeof(Temp) <= 4, "unexpected size of event::Temp");
 
+//-----------------------------------------------------------------------------
 struct Tilt {
     u8 pitch;
     u8 roll;
@@ -186,6 +184,7 @@ struct Tilt {
 
 static_assert(sizeof(Tilt) <= 4, "unexpected size of event::Tilt");
 
+//-----------------------------------------------------------------------------
 struct HotspotStarted {
     lite::Ipv4 ip;
 
@@ -203,6 +202,7 @@ static_assert(
     "unexpected size of event::HotspotStarted"
 );
 
+//-----------------------------------------------------------------------------
 struct HotspotFailed {
     lite::esp8266::HotspotStatus status;
 
@@ -219,6 +219,7 @@ static_assert(
     "unexpected size of event::HotspotFailed"
 );
 
+//-----------------------------------------------------------------------------
 struct HotspotClientCount {
     u8 count;
 
@@ -235,6 +236,7 @@ static_assert(
     "unexpected size of event::HotspotClientCount"
 );
 
+//-----------------------------------------------------------------------------
 struct BatteryInfo {
     s16 current_ma  = 0;
     u8 soc_percent  = 0;
@@ -317,6 +319,7 @@ static_assert(sizeof(BatteryInfo) == 4, "unexpected size of event::BatteryInfo")
 
 static_assert(sizeof(PowerState) <= 4, "unexpected size of PowerState");
 
+//-----------------------------------------------------------------------------
 template <size_t N>
 const char* fmt_power_state(char (&buffer)[N], PowerState state) {
     lite::TextBuffer text(buffer);
@@ -324,6 +327,8 @@ const char* fmt_power_state(char (&buffer)[N], PowerState state) {
     return buffer;
 }
 
+//=============================================================================
+//  union of all payload types
 //-----------------------------------------------------------------------------
 struct Payload {
     union {
@@ -350,7 +355,7 @@ struct Event {
     Id      id = Id::NONE;
     Payload p1 = {};    
 
-	[[nodiscard]] constexpr explicit operator bool() const noexcept {
+	constexpr explicit operator bool() const noexcept {
 		return id != Id::NONE;
 	}
 
@@ -385,8 +390,8 @@ static_assert(sizeof(Event) == 5, "unexpected size of event::Event");
 //=============================================================================
 #pragma pack(pop)
 
-using Bus = lite::EventBus<Event>;
-using Hook = lite::EventHook<Event>;
+using Bus   = lite::EventBus<Event>;
+using Hook  = lite::EventHook<Event>;
 using Queue = lite::EventQueue<Event, EVENT_QUEUE_SIZE>;
 
 } // namespace event

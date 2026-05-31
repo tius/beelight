@@ -119,7 +119,7 @@ private:
         }
 
         char detail[64];
-        LOG_TRACE("state: %s", gauge_.fmt_last_read_details(detail));
+        LOG_TRACE("%s", gauge_.fmt_last_read_details(detail));
     }
 
     void publish_error() {

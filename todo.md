@@ -1,90 +1,54 @@
 # to do - personal notes
 
-kicad
+## kicad
 - button
 - gpout pull-up 
+- twi pull-up
 
-
-hardware test
+## breadboard
 - highside switch ws2812
 - lowside switch ir tx
 - pull-up twi
-- c 5V
+- 10 µF 5V
+- sleep mode strom messen
 
-firmware
-- light sense status led
+## low level
+- status led: helligkeit regeln
+- status led: fehler, charger, battery low ...
 - ota
 - httpd?
+- telnetd?
 - station / wps
+- esp-now, cli, radiowake
+
+## high level
+- detect dancing
+- ir interaction
+- esp-now control
+- bump to pair
 
 ## toolkit
 - clean-up logging
+- check superloop load and latency
+- pixel dithering
 
-## yagni
-- flash mem für cli, logging
-
-## next steps
-- status led für sensorfehler
+## docs
+- gesamtstatus
+- ux dokument aufteilen
+- gebrauchsmuster anmelden
 
 ## build
 - tests build
 - release version
 - lto
 
-## docs
-- gesamtstatus
-- ux dokument aufteilen
+==============================
 
-## schaltung
-- ansteuerung high-side switch über tiefpass prüfen
-- int und gpout via diodes prüfen
-
-## breadboard
-- high-side switch für vled
-- powerbee
-- mosfet für ir tx
-
-## app
-
-acc meter
-- tanzen 
-
-esp-now
-- floor field
-- radiolite control
-- commands?
-
-infrared
-- sync rhythm
-
-power
-- power-up, power-down
-- wake, deep sleep
-- radiowake
-
-ota
-- ap mode?
-- station mode?
-
-pairing
-- bump to pair
-- infrared pairing
-- esp-now pairing
-
-ux
-- frontside animation
-- backside status
-
-## driver
-- powerbee
-
-## litekit
-- check superloop load and latency
-- pixel dithering
-- rtcmem
-- esp-now
+## yagni
+- flash mem für cli, logging
 
 ## stil
+- weniger casts, insbesondere bei printf
 - namen
-- codepath
+- clean-up codepath
 - kommentare

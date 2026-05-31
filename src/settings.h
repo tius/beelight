@@ -47,7 +47,7 @@
 //  button settings
 //------------------------------------------------------------------------------
 #define BUTTON_GPIO             16          // pin number for wake button
-#define BUTTON_SHUTDOWN_HOLD_MS 3000        // hold duration for battery_off
+#define BUTTON_SHUTDOWN_HOLD_MS 7000        // hold duration for gauge shutdown
 
 //==============================================================================
 //  wake info settings

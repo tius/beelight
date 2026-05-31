@@ -1,4 +1,4 @@
-//  manage button-triggered battery_off
+//  manage button-triggered shipping_mode
 //
 //  see LICENSE file for terms
 
@@ -41,17 +41,13 @@ private:
 
     void on_timer() {
         if ( button_is_down() ) {
-            battery_.shutdown();
+            battery_.hibernate();
         }
     }
 
     void on_cmd_off(lite::Out&, lite::Args) {
-        battery_off();
-    }
-
-    void battery_off() {
-        battery_.shutdown();
-        power_.battery_off();
+        battery_.hibernate();
+        power_.shipping_mode();
     }
 };
 

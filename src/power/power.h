@@ -71,7 +71,7 @@ public:
         return charger_.read_status();
     }
 
-    void battery_off() {
+    void shipping_mode() {
         LOG_INFO("entering shipping mode");
         flush_output();
 

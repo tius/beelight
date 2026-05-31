@@ -1,12 +1,17 @@
 # to do - personal notes
 
-hardware
-- hibernate mode
+kicad
+- button
 - gpout pull-up 
-- bq*: messen, shutdown 
+
+
+hardware test
 - highside switch ws2812
 - lowside switch ir tx
+- pull-up twi
+- c 5V
 
+firmware
 - light sense status led
 - ota
 - httpd?

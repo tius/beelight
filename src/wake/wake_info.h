@@ -50,7 +50,7 @@ public:
 
 
 private:
-    using ButtonGpio = lite::gpio::Input<WAKE_INFO_GPIO>;
+    using ButtonGpio = lite::gpio::Input<BUTTON_GPIO>;
 
     static constexpr u16 never = 0xFFFFu;
 

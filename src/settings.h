@@ -44,10 +44,15 @@
 #define HOTSPOT_LEASE_END       lite::ipv4(192, 168, 4, 5)
 
 //==============================================================================
+//  button settings
+//------------------------------------------------------------------------------
+#define BUTTON_GPIO             16          // pin number for wake button
+#define BUTTON_SHUTDOWN_HOLD_MS 3000        // hold duration for shutdown
+
+//==============================================================================
 //  wake info settings
 //------------------------------------------------------------------------------
 #define WAKE_INFO_LOG           none        // log level for wake button events
-#define WAKE_INFO_GPIO          16          // pin number for wake button
 #define WAKE_INFO_KEEP_ALIVE_MS 1500        // keep rtc uptime fresh after release
 
 //==============================================================================

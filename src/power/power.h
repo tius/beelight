@@ -12,6 +12,7 @@
 #include "lite/core/text_buffer.h"
 #include "lite/core/timer.h"
 #include "lite/io/log.h"
+#include "lite/sys/deep_sleep.h"
 #include "lite/sys/twi.h"
 
 #define LOG_TAG         power
@@ -19,8 +20,8 @@
 
 //==============================================================================
 class Power {
-using EventBus = event::Bus;
-using u8 = lite::u8;
+    using u8 = lite::u8;
+    using EventBus = event::Bus;
 
 //------------------------------------------------------------------------------
 public:
@@ -66,13 +67,17 @@ public:
         return charger_.read_status();
     }
 
-    bool enter_shipping_mode() {
+    void shutdown() {
+        LOG_INFO("entering shipping mode");
+        flush_output();
+
         if (!charger_.enter_shipping_mode()) {
-            return false;
+            LOG_ERROR("shipping mode failed");
+            flush_output();
         }
 
-        timer_.stop();
-        return true;
+        delay(1000);
+        lite::sys::deep_sleep();
     }
 
     template <std::size_t N>
@@ -100,6 +105,12 @@ private:
     Mp2667          charger_;
     Status          status_;
     PowerState      published_state_;
+
+    static void flush_output() {
+        if (lite::std_out) {
+            lite::std_out->flush();
+        }
+    }
 
     void on_timer() {
         const auto result = charger_.read_status();

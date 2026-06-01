@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "lite/core/fmt.h"
 #include "lite/core/status.h"
 #include "lite/core/text_buffer.h"
 #include "lite/core/types.h"
@@ -67,11 +68,27 @@ public:
         enum : u8 {
             OK = 0,
             ERR_NOT_INIT,
-            ERR_READ_FLAGS,
-            ERR_READ_VOLTAGE,
             ERR_READ_SOC,
             ERR_READ_CURRENT,
-            ERR_READ_REMAINING_CAP,
+        };
+
+        const char* str() const noexcept {
+            switch (code) {
+                case ERR_NOT_INIT:     return "not initialized";
+                case ERR_READ_SOC:     return "read soc failed";
+                case ERR_READ_CURRENT: return "read current failed";
+                default:               return lite::Status::str();
+            }
+        }
+    };
+
+    //--------------------------------------------------------------------------
+    struct DetailsStatus : public lite::Status {
+        enum : u8 {
+            OK = 0,
+            ERR_NOT_INIT,
+            ERR_READ_FLAGS,
+            ERR_READ_VOLTAGE,
             ERR_READ_FULL_CHARGE_CAP,
         };
 
@@ -80,10 +97,6 @@ public:
                 case ERR_NOT_INIT:     return "not initialized";
                 case ERR_READ_FLAGS:   return "read flags failed";
                 case ERR_READ_VOLTAGE: return "read voltage failed";
-                case ERR_READ_SOC:     return "read soc failed";
-                case ERR_READ_CURRENT: return "read current failed";
-                case ERR_READ_REMAINING_CAP:
-                    return "read remaining capacity failed";
                 case ERR_READ_FULL_CHARGE_CAP:
                     return "read full charge capacity failed";
                 default:               return lite::Status::str();
@@ -93,12 +106,8 @@ public:
 
     //--------------------------------------------------------------------------
     struct State {
-        u16 flags = 0;
-        u16 voltage_mv = 0;
         u8 soc_percent = 0;
         s16 average_current_ma = 0;
-        u16 remaining_capacity_mah = 0;
-        u16 full_charge_capacity_mah = 0;
 
         [[nodiscard]] constexpr bool charging() const noexcept {
             return average_current_ma > BQ27421_CHARGE_DETECT_MA;
@@ -107,36 +116,36 @@ public:
         [[nodiscard]] constexpr bool discharging() const noexcept {
             return average_current_ma < -BQ27421_CHARGE_DETECT_MA;
         }
+    };
 
-        [[nodiscard]] constexpr bool voltage_plausible() const noexcept {
-            return voltage_mv >= 2450u && voltage_mv <= 4500u;
+    //--------------------------------------------------------------------------
+    struct Details : public lite::WithFmtArray<Details> {
+        using lite::WithFmtArray<Details>::fmt;
+
+        DetailsStatus read_state;
+        u16 flags = 0;
+        u16 voltage_mv = 0;
+        u16 full_charge_capacity_mah = 0;
+
+        constexpr explicit operator bool() const noexcept {
+            return read_state.is_ok();
         }
 
-        [[nodiscard]] constexpr bool capacity_plausible() const noexcept {
-            return full_charge_capacity_mah >= BQ27421_DESIGN_CAP_MAH / 2u
-                && full_charge_capacity_mah <= BQ27421_DESIGN_CAP_MAH * 2u;
-        }
+        const char* fmt(char* buffer, std::size_t size) const {
+            lite::TextBuffer text(buffer, size);
 
-        [[nodiscard]] constexpr bool remaining_capacity_plausible() const noexcept {
-            return capacity_plausible()
-                && remaining_capacity_mah <= full_charge_capacity_mah;
-        }
-
-        [[nodiscard]] constexpr u8 quality_percent() const noexcept {
-            if (!voltage_plausible()) {
-                return 0;
+            if (read_state.is_error()) {
+                text.append(read_state.str());
+                return buffer;
             }
 
-            u8 quality = 50;
-
-            if (capacity_plausible()) {
-                quality = static_cast<u8>(quality + 25u);
-            }
-            if (remaining_capacity_plausible()) {
-                quality = static_cast<u8>(quality + 15u);
-            }
-
-            return quality;
+            text.appendf(
+                "%umv %umAh 0x%04X",
+                static_cast<unsigned>(voltage_mv),
+                static_cast<unsigned>(full_charge_capacity_mah),
+                static_cast<unsigned>(flags)
+            );
+            return buffer;
         }
     };
 
@@ -168,51 +177,52 @@ public:
     //--------------------------------------------------------------------------
     Result read_status() {
         if (!device_status_) {
-            last_read_status_ = { ReadStatus::ERR_NOT_INIT };
-            return { .read_state = last_read_status_ };
+            return { .read_state = { ReadStatus::ERR_NOT_INIT } };
         }
 
         State state = {};
 
-        if (!read_word(CMD_FLAGS, state.flags)) {
-            last_read_status_ = { ReadStatus::ERR_READ_FLAGS };
-            return { .read_state = last_read_status_ };
-        }
-
-        if (!read_word(CMD_VOLTAGE, state.voltage_mv)) {
-            last_read_status_ = { ReadStatus::ERR_READ_VOLTAGE };
-            return { .read_state = last_read_status_ };
-        }
-
         u16 soc_percent = 0;
         if (!read_word(CMD_SOC, soc_percent)) {
-            last_read_status_ = { ReadStatus::ERR_READ_SOC };
-            return { .read_state = last_read_status_ };
+            return { .read_state = { ReadStatus::ERR_READ_SOC } };
         }
-        state.soc_percent = static_cast<u8>(soc_percent > 100 ? 100 : soc_percent);
+        state.soc_percent = clamp_soc_percent(soc_percent);
 
         if (!read_s16(CMD_AVERAGE_CURRENT, state.average_current_ma)) {
-            last_read_status_ = { ReadStatus::ERR_READ_CURRENT };
-            return { .read_state = last_read_status_ };
+            return { .read_state = { ReadStatus::ERR_READ_CURRENT } };
         }
-
-        if (!read_word(CMD_REMAINING_CAPACITY, state.remaining_capacity_mah)) {
-            last_read_status_ = { ReadStatus::ERR_READ_REMAINING_CAP };
-            return { .read_state = last_read_status_ };
-        }
-
-        if (!read_word(CMD_FULL_CHARGE_CAPACITY, state.full_charge_capacity_mah)) {
-            last_read_status_ = { ReadStatus::ERR_READ_FULL_CHARGE_CAP };
-            return { .read_state = last_read_status_ };
-        }
-
-        last_read_status_ = { ReadStatus::OK };
-        last_state_ = state;
 
         return {
-            .read_state = last_read_status_,
+            .read_state = { ReadStatus::OK },
             .state = state,
         };
+    }
+
+    Details read_details() {
+        Details details = {};
+
+        if (!device_status_) {
+            details.read_state = { DetailsStatus::ERR_NOT_INIT };
+            return details;
+        }
+
+        if (!read_word(CMD_FLAGS, details.flags)) {
+            details.read_state = { DetailsStatus::ERR_READ_FLAGS };
+            return details;
+        }
+
+        if (!read_word(CMD_VOLTAGE, details.voltage_mv)) {
+            details.read_state = { DetailsStatus::ERR_READ_VOLTAGE };
+            return details;
+        }
+
+        if (!read_word(CMD_FULL_CHARGE_CAPACITY, details.full_charge_capacity_mah)) {
+            details.read_state = { DetailsStatus::ERR_READ_FULL_CHARGE_CAP };
+            return details;
+        }
+
+        details.read_state = { DetailsStatus::OK };
+        return details;
     }
 
     //--------------------------------------------------------------------------
@@ -242,27 +252,6 @@ public:
         return buffer;
     }
 
-    template <std::size_t N>
-    const char* fmt_last_read_details(char (&buffer)[N]) const {
-        lite::TextBuffer text(buffer);
-
-        if (last_read_status_.is_error()) {
-            text.append(last_read_status_.str());
-            return buffer;
-        }
-
-        text.appendf(
-            "%umv %dmA, %u%% of %umAh (quality=%u%%, flags=0x%04X)",
-            static_cast<unsigned>(last_state_.voltage_mv),
-            static_cast<int>(last_state_.average_current_ma),
-            static_cast<unsigned>(last_state_.soc_percent),
-            static_cast<unsigned>(last_state_.full_charge_capacity_mah),
-            static_cast<unsigned>(last_state_.quality_percent()),
-            static_cast<unsigned>(last_state_.flags)
-        );
-        return buffer;
-    }
-
 //------------------------------------------------------------------------------
 private:
     static constexpr u8 I2C_ADDR = BQ27421_I2C_ADDR;
@@ -270,7 +259,6 @@ private:
     static constexpr u8 CMD_CONTROL         = 0x00;
     static constexpr u8 CMD_VOLTAGE         = 0x04;
     static constexpr u8 CMD_FLAGS           = 0x06;
-    static constexpr u8 CMD_REMAINING_CAPACITY = 0x0C;
     static constexpr u8 CMD_FULL_CHARGE_CAPACITY = 0x0E;
     static constexpr u8 CMD_AVERAGE_CURRENT = 0x10;
     static constexpr u8 CMD_SOC             = 0x1C;
@@ -301,11 +289,13 @@ private:
 
     lite::Twi&      twi_;
     DeviceStatus    device_status_;
-    ReadStatus      last_read_status_ = { ReadStatus::ERR_NOT_INIT };
-    State           last_state_;
     u16             device_type_ = 0;
     u16             firmware_version_ = 0;
     u16             chem_id_ = 0;
+
+    static constexpr u8 clamp_soc_percent(u16 soc_percent) noexcept {
+        return static_cast<u8>(soc_percent > 100u ? 100u : soc_percent);
+    }
 
     DeviceStatus init() {
         if (twi_.probe(I2C_ADDR).is_error()) {

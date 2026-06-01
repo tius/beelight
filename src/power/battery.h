@@ -10,6 +10,7 @@
 
 #include "lite/core/changed.h"
 #include "lite/core/status.h"
+#include "lite/core/text_buffer.h"
 #include "lite/core/timer.h"
 #include "lite/io/log.h"
 #include "lite/sys/twi.h"
@@ -112,8 +113,15 @@ private:
             }});
         }
 
-        char detail[64];
-        LOG_TRACE("%s", gauge_.fmt_last_read_details(detail));
+        if constexpr (LOG_ENABLED(trace)) {
+            char buffer[96];
+            lite::TextBuffer text(buffer);
+
+            const auto details = gauge_.read_details();
+            text.append_fmt(info).append(" (").append_fmt(details).append(")");
+
+            LOG_TRACE("%s", text.c_str());
+        }
     }
 
     void publish_error() {

@@ -14,6 +14,7 @@
 #include "lite/core/fsm.h"
 #include "lite/core/event_bus.h"
 #include "lite/core/event_queue.h"
+#include "lite/core/fmt.h"
 #include "lite/core/ipv4.h"
 #include "lite/core/text_buffer.h"
 #include "lite/esp8266/hotspot.h"
@@ -237,7 +238,9 @@ static_assert(
 );
 
 //-----------------------------------------------------------------------------
-struct BatteryInfo {
+struct BatteryInfo : public lite::WithFmtArray<BatteryInfo> {
+    using lite::WithFmtArray<BatteryInfo>::fmt;
+
     s16 current_ma  = 0;
     u8 soc_percent  = 0;
     u8 flags        = 0;
@@ -274,9 +277,8 @@ struct BatteryInfo {
             && flags == other.flags;
     }
 
-    template <size_t N>
-    const char* fmt(char (&buffer)[N]) const {
-        lite::TextBuffer text(buffer);
+    const char* fmt(char* buffer, std::size_t size) const {
+        lite::TextBuffer text(buffer, size);
 
         if (lite::bit_is_hi(flags, GAUGE_ERROR)) {
             text.append("battery_info gauge_error");

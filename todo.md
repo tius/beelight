@@ -1,9 +1,6 @@
 # to do - personal notes
 
 ## battery
-- quality weg
-- hibernate weg
-- read status trennen?
 - flags ausschreiben?
 
 ## kicad
@@ -53,6 +50,7 @@
 
 ## stil
 - weniger casts, insbesondere bei printf
+- WithXyz statt XyzCrtp
 - namen
 - clean-up codepath
 - kommentare

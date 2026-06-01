@@ -1,15 +1,14 @@
 # to do - personal notes
 
+## battery
+- quality weg
+- hibernate weg
+- read status trennen?
+- flags ausschreiben?
+
 ## kicad
-- button
-- gpout pull-up 
-- twi pull-up
 
 ## breadboard
-- highside switch ws2812
-- lowside switch ir tx
-- pull-up twi
-- 10 µF 5V
 - sleep mode strom messen
 
 ## low level
@@ -32,6 +31,10 @@
 - check superloop load and latency
 - pixel dithering
 
+## readme
+- architektur, super-loop, heap-frei, event-bus ...
+- cooperative scheduling
+
 ## docs
 - gesamtstatus
 - ux dokument aufteilen
@@ -45,6 +48,7 @@
 ==============================
 
 ## yagni
+- parameter charger und gauge optimieren
 - flash mem für cli, logging
 
 ## stil

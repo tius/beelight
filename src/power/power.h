@@ -71,7 +71,7 @@ public:
         return charger_.read_status();
     }
 
-    void shipping_mode() {
+    void power_off() {
         LOG_INFO("entering shipping mode");
         flush_output();
 

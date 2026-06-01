@@ -6,7 +6,6 @@
 
 #include "settings.h"
 #include "back_led/back_show.h"
-#include "button/shutdown.h"
 #include "boot/request.h"
 #include "event/event.h"
 #include "event/logger.h"
@@ -119,7 +118,7 @@ private:
     lite::StdOut        std_out_    {serial_out_};
     AppLogger           logger_     {serial_out_};
 
-    lite::CmdShell     shell_      {};
+    lite::CmdShell      shell_      {};
     lite::Console       console_    {shell_, serial_out_};
 
     event::Logger       event_logger_{event_bus_};
@@ -129,7 +128,6 @@ private:
 
     Battery             battery_    {twi_, event_bus_, next_timer_offset()};
     Power               power_      {twi_, event_bus_, next_timer_offset()};
-    ButtonShutdown      shutdown_   {shell_, power_, battery_};
 
     BackLed             back_led_   {};
     BackShow            back_show_  {back_led_, event_bus_};
@@ -141,7 +139,13 @@ private:
     void on_cmd_hotspot(lite::Out& out, lite::Args args) {
         boot::reboot(boot::Mode::hotspot);
     }
-    
+
+    lite::Cmd           cmd_off_    {shell_, "off", "turn battery off", "", METHOD_THIS(on_cmd_off)};
+
+    void on_cmd_off(lite::Out&, lite::Args) {
+        power_.power_off();
+    }
+
     lite::cmd::SysCmd  cmd_sys_    {shell_};
 
 };

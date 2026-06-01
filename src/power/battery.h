@@ -74,13 +74,7 @@ public:
         return gauge_.read_status();
     }
 
-    void hibernate() {
-        LOG_INFO("enter hibernate mode");
-        if (!gauge_.enter_hibernate()) {
-            LOG_ERROR("hibernate failed");
-        }
-    }
-
+    //  use with care, see Bq27421::enter_shutdown() for caveats
     void shutdown() {
         LOG_INFO("enter shutdown mode");
         if (!gauge_.enter_shutdown()) {

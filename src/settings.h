@@ -80,7 +80,7 @@
 //------------------------------------------------------------------------------
 #define IR_TX_LOG               none        // log level for ir transmitter events
 #define IR_TX_GPIO              5           // pin number for infrared transmitter data
-#define IR_TX_ACTIVE_LOW        true        // drive low to turn ir led on
+#define IR_TX_ACTIVE_LOW        false       // drive low to turn ir led on
 
 //==============================================================================
 //  I2C settings

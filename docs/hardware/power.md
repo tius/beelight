@@ -28,7 +28,9 @@ see also:
 ### BQ27421
 
 - provides battery state telemetry
-- MCU enters hibernate mode via I2C for off mode
+- firmware arms hibernate mode via I2C during gauge initialization
+- actual hibernate entry happens when the gauge sees a relaxed cell and
+	current below `Hibernate I`
 - shutdown mode is intentionally not used because it can discard learned battery
 	data and can make wake behavior unreliable
 
@@ -106,8 +108,10 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 
 ## power off
 
-- MCU enters BQ27421 hibernate mode via I2C
+- BQ27421 hibernate mode is armed during gauge initialization
 - MCU enters MP2667 shipping mode via I2C
+- after MP2667 shipping removes the system load, BQ27421 can enter hibernate
+	automatically when its own conditions are met
 - BQ27421 shutdown mode is not used, to preserve learned battery data and
 	avoid wake problems
 - exit from shipping mode requires MP2667 INT

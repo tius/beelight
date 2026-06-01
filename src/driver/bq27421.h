@@ -49,13 +49,15 @@ public:
             OK = 0,
             ERR_PROBE,
             ERR_READ_INFO,
+            ERR_ARM_HIBERNATE,
         };
 
         const char* str() const noexcept {
             switch (code) {
-                case ERR_PROBE:     return "probe failed";
-                case ERR_READ_INFO: return "read info failed";
-                default:            return lite::Status::str();
+                case ERR_PROBE:         return "probe failed";
+                case ERR_READ_INFO:     return "read info failed";
+                case ERR_ARM_HIBERNATE: return "arm hibernate failed";
+                default:                return lite::Status::str();
             }
         }
     };
@@ -214,12 +216,10 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    bool enter_hibernate() {
-        if (!device_status_) {
-            return false;
-        }
-        return write_control(CTRL_SET_HIBERNATE);
-    }
+    //  caveats:
+    //      - use shutdown with care
+    //      - all learned state is lost on shutdown
+    //      - shutdown mode can only be exited by power cycle or gpout toggle
 
     bool enter_shutdown() {
         if (!device_status_) {
@@ -318,6 +318,10 @@ private:
             || !read_control(CTRL_CHEM_ID, chem_id_)
         ) {
             return { DeviceStatus::ERR_READ_INFO };
+        }
+
+        if (!write_control(CTRL_SET_HIBERNATE)) {
+            return { DeviceStatus::ERR_ARM_HIBERNATE };
         }
 
         return { DeviceStatus::OK };

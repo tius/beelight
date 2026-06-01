@@ -98,7 +98,7 @@
 //  battery settings
 //------------------------------------------------------------------------------
 #define BATTERY_LOG             trace       // log level for battery events
-#define BATTERY_SAMPLE_MS       5000        // gauge polling interval
+#define BATTERY_SAMPLE_MS       1000        // gauge update interval
 #define BATTERY_LOW_SOC_PERCENT 20          // low battery threshold
 #define BATTERY_CRIT_SOC_PERCENT 5          // critical battery threshold
 
@@ -163,3 +163,5 @@
 #define BQ27421_TERM_VOLTAGE_MV 3000        // empty voltage threshold
 #define BQ27421_TAPER_MA        MP2667_TERM_MA // charge taper current
 #define BQ27421_CHARGE_DETECT_MA 5          // signed current charge threshold
+#define BQ27421_HIBERNATE_CURRENT_MA 3      // hibernate entry current
+#define BQ27421_I2C_PACKET_WAIT_US 70       // bus-free time at 400 kHz

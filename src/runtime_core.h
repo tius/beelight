@@ -143,7 +143,9 @@ private:
     lite::Cmd           cmd_off_    {shell_, "off", "turn battery off", "", METHOD_THIS(on_cmd_off)};
 
     void on_cmd_off(lite::Out&, lite::Args) {
-        power_.power_off();
+        front_leds_.power(false);
+        power_.prepare_power_off();
+        power_.enter_shipping_mode();
     }
 
     lite::cmd::SysCmd  cmd_sys_    {shell_};

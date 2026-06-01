@@ -72,12 +72,22 @@ public:
     }
 
     void power_off() {
+        prepare_power_off();
+        enter_shipping_mode();
+    }
+
+    void prepare_power_off() {
         LOG_INFO("entering shipping mode");
         flush_output();
+    }
 
-        if (!charger_.enter_shipping_mode()) {
-            LOG_ERROR("shipping mode failed");
+    bool enter_shipping_mode() {
+        if (charger_.enter_shipping_mode()) {
+            return true;
         }
+
+        LOG_ERROR("shipping mode failed");
+        return false;
     }
 
     template <std::size_t N>

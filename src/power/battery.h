@@ -75,14 +75,6 @@ public:
         return gauge_.read_status();
     }
 
-    //  use with care, see Bq27421::enter_shutdown() for caveats
-    void shutdown() {
-        LOG_INFO("enter shutdown mode");
-        if (!gauge_.enter_shutdown()) {
-            LOG_ERROR("shutdown failed");
-        }
-    }
-
 //------------------------------------------------------------------------------
 private:
     EventBus&           event_bus_;
@@ -90,12 +82,19 @@ private:
     Bq27421             gauge_;
     Status              status_;
     event::BatteryInfo  published_info_;
+    Bq27421::Details    logged_details_;
 
     void on_timer() {
+        const auto update_state = gauge_.update();
+        if (update_state.is_error()) {
+            LOG_WARN("update failed: %s", update_state.str());
+        }
+
         const auto result = gauge_.read_status();
         if (!result) {
-            LOG_WARN("status read failed: %s", result.read_state.str());
-            publish_error();
+            if (result.read_state.code == Bq27421::ReadStatus::ERR_NOT_INIT) {
+                publish_error();
+            }
             return;
         }
 
@@ -111,16 +110,16 @@ private:
             event_bus_.publish({ event::Id::BATTERY_INFO, { .battery_info =
                 published_info_
             }});
+            char buffer[48];
+            LOG_INFO("%s", info.fmt(buffer));
         }
 
         if constexpr (LOG_ENABLED(trace)) {
-            char buffer[96];
-            lite::TextBuffer text(buffer);
-
             const auto details = gauge_.read_details();
-            text.append_fmt(info).append(" (").append_fmt(details).append(")");
-
-            LOG_TRACE("%s", text.c_str());
+            if (details && lite::changed(logged_details_, details)) {
+                char buffer[48];
+                LOG_TRACE("%s", details.fmt(buffer));
+            }
         }
     }
 

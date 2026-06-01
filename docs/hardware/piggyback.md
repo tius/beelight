@@ -72,8 +72,8 @@ visible product front.
 
 MP2667 and BQ27421 each have a dedicated control pin used as **input** on
 this board (not as output). Both pins are tied to the Rysta wake lines
-through diodes. Normal firmware uses MP2667 shipping mode and keeps BQ27421
-hibernate mode armed for off mode.
+through diodes. Normal firmware uses MP2667 shipping mode. BQ27421 hibernate
+mode is kept armed by periodic gauge updates.
 
 - MP2667 `INT` (input) -- diode -- Rysta `GPIO 16` / WAKE line
 - BQ27421 `GPOUT` (input) -- diode -- Rysta `RST` line

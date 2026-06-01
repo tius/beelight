@@ -28,7 +28,11 @@ see also:
 ### BQ27421
 
 - provides battery state telemetry
-- firmware arms hibernate mode via I2C during gauge initialization
+- firmware restores normal hibernate data-memory settings during startup
+- firmware clears the hibernate request during startup while configuration is
+	restored
+- periodic gauge updates read one cached value, then arm hibernate mode as the
+	last BQ27421 I2C access
 - actual hibernate entry happens when the gauge sees a relaxed cell and
 	current below `Hibernate I`
 - shutdown mode is intentionally not used because it can discard learned battery
@@ -68,6 +72,12 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 
 - Li-ion battery is external
 - BQ27421 is on the piggyback and observes the external battery path
+- firmware updates the gauge once per second
+- each update reads one cached value from the BQ27421, then sends
+	`SET_HIBERNATE` as the last BQ27421 command
+- status uses cached `SOC` and `AverageCurrent`
+- detail logging uses cached `Voltage` and `FullChargeCapacity`
+- status and detail reads do not access the BQ27421 directly
 
 ### led rail
 
@@ -91,13 +101,13 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 - MCU can configure charging behavior on MP2667 via I2C
 - charging and system operation can run at the same time via MP2667 power-path
 - MCU can read charger state from MP2667 via I2C
-- MCU can read battery state from BQ27421 via I2C
+- firmware publishes cached battery state from the periodic BQ27421 update
 
 ## active operation mode
 
 - operation can run from battery or USB-C input
 - MCU can read active power source from MP2667 via I2C
-- MCU can read battery discharge state from BQ27421 via I2C
+- firmware reads battery discharge current through the periodic BQ27421 update
 
 ## standby mode
 
@@ -108,7 +118,9 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 
 ## power off
 
-- BQ27421 hibernate mode is armed during gauge initialization
+- firmware switches off the led rail and flushes logs, then avoids BQ27421
+	access before shipping mode
+- BQ27421 hibernate mode is kept armed by periodic gauge updates
 - MCU enters MP2667 shipping mode via I2C
 - after MP2667 shipping removes the system load, BQ27421 can enter hibernate
 	automatically when its own conditions are met

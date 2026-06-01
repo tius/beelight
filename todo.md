@@ -1,12 +1,12 @@
 # to do - personal notes
 
-## battery
-- flags ausschreiben?
-
 ## kicad
 
 ## breadboard
-- sleep mode strom messen
+
+## driver
+- bq hibernate prüfen
+- danach battery / bq etwas glätten
 
 ## low level
 - status led: helligkeit regeln

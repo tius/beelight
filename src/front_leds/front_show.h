@@ -16,6 +16,7 @@ public:
         : front_leds_(front_leds), timer_(MSG_THIS(on_timer)) {}
 
     void start() {
+        front_leds_.power(true);
         anim_step_idx_ = 0u;
         anim_pixel_idx_ = 0u;
         timer_.start_periodic(k_anim_step);
@@ -37,6 +38,7 @@ private:
             timer_.stop();
             front_leds_.clr();
             front_leds_.update();
+            front_leds_.power(false);
             return;
         }
 

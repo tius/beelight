@@ -4,8 +4,11 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include <Arduino.h>
 
+#include "lite/core/bits.h"
 #include "lite/core/fmt.h"
 #include "lite/core/status.h"
 #include "lite/core/text_buffer.h"
@@ -203,7 +206,8 @@ public:
 
     //--------------------------------------------------------------------------
     explicit Bq27421(lite::Twi& twi)
-        : twi_(twi)
+        : bus_(twi)
+        , regs_(bus_)
     {
         device_status_ = init();
     }
@@ -343,6 +347,20 @@ private:
         u8 value = 0;
     };
 
+    static constexpr u8 next_offset(u8 offset) noexcept { return static_cast<u8>(offset + 1u); }
+
+    static constexpr u8 block_data_command(u8 offset) noexcept {
+        return static_cast<u8>(CMD_BLOCK_DATA + offset);
+    }
+
+    static constexpr DataPatch patch_hi_byte(u8 offset, u16 value) noexcept {
+        return { offset, lite::hi_byte(value) };
+    }
+
+    static constexpr DataPatch patch_lo_byte(u8 offset, u16 value) noexcept {
+        return { next_offset(offset), lite::lo_byte(value) };
+    }
+
     enum CacheFlag : u8 {
         CACHE_SOC             = 1u << 0u,
         CACHE_CURRENT         = 1u << 1u,
@@ -388,15 +406,122 @@ private:
     static_assert(DESIGN_ENERGY_MWH > 0, "design energy must be positive");
     static_assert(TAPER_RATE > 0, "taper rate must be positive");
 
-    lite::Twi&      twi_;
+    class Bus {
+    public:
+        explicit Bus(lite::Twi& twi) : twi_(twi) {}
+
+        bool probe() {
+            wait_packet();
+            const bool ok = twi_.probe(I2C_ADDR).is_ok();
+            if (ok) { finish_packet(); }
+            return ok;
+        }
+
+        bool write(u8 command, u8 value) {
+            wait_packet();
+            return finish(twi_.write(I2C_ADDR, command, value).is_ok());
+        }
+
+        bool write_read(
+            const void* write_data,
+            std::size_t write_size,
+            void* read_data,
+            std::size_t read_size
+        ) {
+            wait_packet();
+            return finish(twi_.write_read(
+                I2C_ADDR,
+                write_data,
+                write_size,
+                read_data,
+                read_size
+            ).is_ok());
+        }
+
+    private:
+        lite::Twi&      twi_;
+        unsigned long   last_packet_us_ = 0;
+        bool            has_packet_time_ = false;
+
+        void wait_packet() {
+            if (!has_packet_time_) {
+                return;
+            }
+
+            const unsigned long elapsed_us = ::micros() - last_packet_us_;
+            if (elapsed_us >= BQ27421_I2C_PACKET_WAIT_US) {
+                return;
+            }
+
+            ::delayMicroseconds(static_cast<unsigned int>(
+                BQ27421_I2C_PACKET_WAIT_US - elapsed_us
+            ));
+        }
+
+        void finish_packet() noexcept {
+            last_packet_us_ = ::micros();
+            has_packet_time_ = true;
+        }
+
+        bool finish(bool ok) noexcept { finish_packet(); return ok; }
+    };
+
+    class Registers {
+    public:
+        explicit Registers(Bus& bus) : bus_(bus) {}
+
+        bool probe() { return bus_.probe(); }
+
+        bool write_u8(u8 command, u8 value) { return bus_.write(command, value); }
+
+        bool read_u16(u8 command, u16& value) {
+            lite::lh16 data;
+            if (!read(command, data)) {
+                return false;
+            }
+
+            value = data;
+            return true;
+        }
+
+        bool read_s16(u8 command, s16& value) {
+            u16 raw = 0;
+            if (!read_u16(command, raw)) {
+                return false;
+            }
+
+            value = static_cast<s16>(raw);
+            return true;
+        }
+
+        bool read_block(u8 command, u8 (&data)[DATA_BLOCK_SIZE]) { return read(command, data); }
+
+        bool write_control(u16 subcommand) {
+            return write_u8(CMD_CONTROL, lite::lo_byte(subcommand))
+                && write_u8(next_offset(CMD_CONTROL), lite::hi_byte(subcommand));
+        }
+
+        bool read_control(u16 subcommand, u16& value) {
+            return write_control(subcommand) && read_u16(CMD_CONTROL, value);
+        }
+
+    private:
+        Bus& bus_;
+
+        template <typename T>
+        bool read(u8 command, T& data) {
+            return bus_.write_read(&command, sizeof(command), &data, sizeof(data));
+        }
+    };
+
+    Bus             bus_;
+    Registers       regs_;
     DeviceStatus    device_status_;
     u16             device_type_ = 0;
     u16             firmware_version_ = 0;
     u16             chem_id_ = 0;
     State           state_;
     Details         details_;
-    unsigned long   last_i2c_packet_us_ = 0;
-    bool            has_i2c_packet_time_ = false;
     u8              cache_flags_ = 0;
     u8              update_step_ = UPDATE_SOC;
 
@@ -405,15 +530,14 @@ private:
     }
 
     DeviceStatus init() {
-        if (twi_.probe(I2C_ADDR).is_error()) {
+        if (!regs_.probe()) {
             return { DeviceStatus::ERR_PROBE };
         }
-        finish_i2c_packet();
 
         if (
-               !read_control(CTRL_DEVICE_TYPE, device_type_)
-            || !read_control(CTRL_FW_VERSION, firmware_version_)
-            || !read_control(CTRL_CHEM_ID, chem_id_)
+               !regs_.read_control(CTRL_DEVICE_TYPE, device_type_)
+            || !regs_.read_control(CTRL_FW_VERSION, firmware_version_)
+            || !regs_.read_control(CTRL_CHEM_ID, chem_id_)
         ) {
             return { DeviceStatus::ERR_READ_INFO };
         }
@@ -433,16 +557,12 @@ private:
         return { DeviceStatus::OK };
     }
 
-    bool cache_has(u8 flags) const noexcept {
-        return (cache_flags_ & flags) == flags;
-    }
+    bool cache_has(u8 flags) const noexcept { return (cache_flags_ & flags) == flags; }
 
-    void set_cache_flag(u8 flag) noexcept {
-        cache_flags_ = static_cast<u8>(cache_flags_ | flag);
-    }
+    void set_cache_flag(u8 flag) noexcept { cache_flags_ |= flag; }
 
     void advance_update_step() noexcept {
-        update_step_ = static_cast<u8>(update_step_ + 1u);
+        ++update_step_;
         if (update_step_ >= UPDATE_COUNT) {
             update_step_ = UPDATE_SOC;
         }
@@ -461,7 +581,7 @@ private:
 
     UpdateStatus update_soc() {
         u16 soc_percent = 0;
-        if (!read_word(CMD_SOC, soc_percent)) {
+        if (!regs_.read_u16(CMD_SOC, soc_percent)) {
             return { UpdateStatus::ERR_READ_SOC };
         }
 
@@ -471,7 +591,7 @@ private:
     }
 
     UpdateStatus update_current() {
-        if (!read_s16(CMD_AVERAGE_CURRENT, state_.average_current_ma)) {
+        if (!regs_.read_s16(CMD_AVERAGE_CURRENT, state_.average_current_ma)) {
             return { UpdateStatus::ERR_READ_CURRENT };
         }
 
@@ -480,7 +600,7 @@ private:
     }
 
     UpdateStatus update_voltage() {
-        if (!read_word(CMD_VOLTAGE, details_.voltage_mv)) {
+        if (!regs_.read_u16(CMD_VOLTAGE, details_.voltage_mv)) {
             return { UpdateStatus::ERR_READ_VOLTAGE };
         }
 
@@ -489,7 +609,7 @@ private:
     }
 
     UpdateStatus update_remaining_cap() {
-        if (!read_word(
+        if (!regs_.read_u16(
             CMD_REMAINING_CAPACITY,
             details_.remaining_capacity_mah
         )) {
@@ -501,7 +621,7 @@ private:
     }
 
     UpdateStatus update_full_charge_cap() {
-        if (!read_word(
+        if (!regs_.read_u16(
             CMD_FULL_CHARGE_CAPACITY,
             details_.full_charge_capacity_mah
         )) {
@@ -512,18 +632,9 @@ private:
         return { UpdateStatus::OK };
     }
 
-    bool read_control(u16 subcommand, u16& value) {
-        return write_control(subcommand)
-            && read_word(CMD_CONTROL, value);
-    }
+    bool request_hibernate() { return regs_.write_control(CTRL_SET_HIBERNATE); }
 
-    bool request_hibernate() {
-        return write_control(CTRL_SET_HIBERNATE);
-    }
-
-    bool clear_hibernate() {
-        return write_control(CTRL_CLEAR_HIBERNATE);
-    }
+    bool clear_hibernate() { return regs_.write_control(CTRL_CLEAR_HIBERNATE); }
 
     bool wait_init_complete() {
         return wait_control_status(
@@ -549,7 +660,7 @@ private:
     }
 
     bool enter_cfg_update() {
-        if (!write_control(CTRL_SET_CFGUPDATE)) {
+        if (!regs_.write_control(CTRL_SET_CFGUPDATE)) {
             return false;
         }
 
@@ -557,7 +668,7 @@ private:
     }
 
     bool exit_cfg_update() {
-        if (!write_control(CTRL_SOFT_RESET)) {
+        if (!regs_.write_control(CTRL_SOFT_RESET)) {
             return false;
         }
 
@@ -566,63 +677,41 @@ private:
 
     bool write_state_cfg() {
         const DataPatch patches[] = {
-            { STATE_DESIGN_CAPACITY, hi(BQ27421_DESIGN_CAP_MAH) },
-            {
-                static_cast<u8>(STATE_DESIGN_CAPACITY + 1u),
-                lo(BQ27421_DESIGN_CAP_MAH)
-            },
-            { STATE_DESIGN_ENERGY, hi(DESIGN_ENERGY_MWH) },
-            {
-                static_cast<u8>(STATE_DESIGN_ENERGY + 1u),
-                lo(DESIGN_ENERGY_MWH)
-            },
-            { STATE_TERM_VOLTAGE, hi(BQ27421_TERM_VOLTAGE_MV) },
-            {
-                static_cast<u8>(STATE_TERM_VOLTAGE + 1u),
-                lo(BQ27421_TERM_VOLTAGE_MV)
-            },
-            { STATE_TAPER_RATE, hi(TAPER_RATE) },
-            {
-                static_cast<u8>(STATE_TAPER_RATE + 1u),
-                lo(TAPER_RATE)
-            },
+            patch_hi_byte(STATE_DESIGN_CAPACITY, BQ27421_DESIGN_CAP_MAH),
+            patch_lo_byte(STATE_DESIGN_CAPACITY, BQ27421_DESIGN_CAP_MAH),
+            patch_hi_byte(STATE_DESIGN_ENERGY, DESIGN_ENERGY_MWH),
+            patch_lo_byte(STATE_DESIGN_ENERGY, DESIGN_ENERGY_MWH),
+            patch_hi_byte(STATE_TERM_VOLTAGE, BQ27421_TERM_VOLTAGE_MV),
+            patch_lo_byte(STATE_TERM_VOLTAGE, BQ27421_TERM_VOLTAGE_MV),
+            patch_hi_byte(STATE_TAPER_RATE, TAPER_RATE),
+            patch_lo_byte(STATE_TAPER_RATE, TAPER_RATE),
         };
 
-        return write_data_block(
-            SUBCLASS_STATE,
-            0,
-            patches,
-            static_cast<u8>(sizeof(patches) / sizeof(patches[0]))
-        );
+        return write_data_block(SUBCLASS_STATE, 0, patches);
     }
 
     bool write_power_cfg(u16 hibernate_current_ma, u16 hibernate_voltage_mv) {
         const DataPatch patches[] = {
-            { POWER_HIBERNATE_I, hi(hibernate_current_ma) },
-            {
-                static_cast<u8>(POWER_HIBERNATE_I + 1u),
-                lo(hibernate_current_ma)
-            },
-            { POWER_HIBERNATE_V, hi(hibernate_voltage_mv) },
-            {
-                static_cast<u8>(POWER_HIBERNATE_V + 1u),
-                lo(hibernate_voltage_mv)
-            },
+            patch_hi_byte(POWER_HIBERNATE_I, hibernate_current_ma),
+            patch_lo_byte(POWER_HIBERNATE_I, hibernate_current_ma),
+            patch_hi_byte(POWER_HIBERNATE_V, hibernate_voltage_mv),
+            patch_lo_byte(POWER_HIBERNATE_V, hibernate_voltage_mv),
         };
 
-        return write_data_block(
-            SUBCLASS_POWER,
-            0,
-            patches,
-            static_cast<u8>(sizeof(patches) / sizeof(patches[0]))
-        );
+        return write_data_block(SUBCLASS_POWER, 0, patches);
+    }
+
+    template <std::size_t N>
+    bool write_data_block(u8 subclass, u8 block_idx, const DataPatch (&patches)[N]) {
+        static_assert(N <= 0xFFu, "too many data patches");
+        return write_data_block(subclass, block_idx, patches, N);
     }
 
     bool write_data_block(
         u8 subclass,
         u8 block_idx,
         const DataPatch* patches,
-        u8 patch_count
+        std::size_t patch_count
     ) {
         u8 data[DATA_BLOCK_SIZE] = {};
 
@@ -633,22 +722,22 @@ private:
             return false;
         }
 
-        for (u8 patch_idx = 0; patch_idx < patch_count; ++patch_idx) {
+        for (std::size_t patch_idx = 0; patch_idx < patch_count; ++patch_idx) {
             const auto& patch = patches[patch_idx];
             if (patch.offset >= DATA_BLOCK_SIZE) {
                 return false;
             }
 
             data[patch.offset] = patch.value;
-            if (!write_reg_u8(
-                static_cast<u8>(CMD_BLOCK_DATA + patch.offset),
+            if (!regs_.write_u8(
+                block_data_command(patch.offset),
                 patch.value
             )) {
                 return false;
             }
         }
 
-        if (!write_reg_u8(CMD_BLOCK_DATA_CHECKSUM, checksum(data))) {
+        if (!regs_.write_u8(CMD_BLOCK_DATA_CHECKSUM, checksum(data))) {
             return false;
         }
 
@@ -658,9 +747,9 @@ private:
 
     bool select_data_block(u8 subclass, u8 block_idx) {
         if (
-               !write_reg_u8(CMD_BLOCK_DATA_CONTROL, 0)
-            || !write_reg_u8(CMD_DATA_CLASS, subclass)
-            || !write_reg_u8(CMD_DATA_BLOCK, block_idx)
+               !regs_.write_u8(CMD_BLOCK_DATA_CONTROL, 0)
+            || !regs_.write_u8(CMD_DATA_CLASS, subclass)
+            || !regs_.write_u8(CMD_DATA_BLOCK, block_idx)
         ) {
             return false;
         }
@@ -669,27 +758,15 @@ private:
         return true;
     }
 
-    bool read_data_block(u8 (&data)[DATA_BLOCK_SIZE]) {
-        const u8 command = CMD_BLOCK_DATA;
-        wait_i2c_packet();
-        const bool ok = twi_.write_read(
-            I2C_ADDR,
-            &command,
-            sizeof(command),
-            data,
-            sizeof(data)
-        ).is_ok();
-        finish_i2c_packet();
-        return ok;
-    }
+    bool read_data_block(u8 (&data)[DATA_BLOCK_SIZE]) { return regs_.read_block(CMD_BLOCK_DATA, data); }
 
-    bool verify_data_block(const DataPatch* patches, u8 patch_count) {
+    bool verify_data_block(const DataPatch* patches, std::size_t patch_count) {
         u8 data[DATA_BLOCK_SIZE] = {};
         if (!read_data_block(data)) {
             return false;
         }
 
-        for (u8 patch_idx = 0; patch_idx < patch_count; ++patch_idx) {
+        for (std::size_t patch_idx = 0; patch_idx < patch_count; ++patch_idx) {
             const auto& patch = patches[patch_idx];
             if (data[patch.offset] != patch.value) {
                 return false;
@@ -704,7 +781,7 @@ private:
 
         while (static_cast<long>(deadline - ::millis()) >= 0) {
             u16 flags = 0;
-            if (!read_word(CMD_FLAGS, flags)) {
+            if (!regs_.read_u16(CMD_FLAGS, flags)) {
                 ::delay(10);
                 continue;
             }
@@ -725,7 +802,7 @@ private:
 
         while (static_cast<long>(deadline - ::millis()) >= 0) {
             u16 control_status = 0;
-            if (!read_control(CTRL_CONTROL_STATUS, control_status)) {
+            if (!regs_.read_control(CTRL_CONTROL_STATUS, control_status)) {
                 ::delay(10);
                 continue;
             }
@@ -741,86 +818,9 @@ private:
         return false;
     }
 
-    bool write_control(u16 subcommand) {
-        return write_reg_u8(
-                CMD_CONTROL,
-                static_cast<u8>(subcommand & 0xFFu)
-            )
-            && write_reg_u8(
-                static_cast<u8>(CMD_CONTROL + 1u),
-                static_cast<u8>(subcommand >> 8u)
-            );
-    }
-
-    bool write_reg_u8(u8 command, u8 value) {
-        wait_i2c_packet();
-        const bool ok = twi_.write(I2C_ADDR, command, value).is_ok();
-        finish_i2c_packet();
-        return ok;
-    }
-
-    bool read_word(u8 command, u16& value) {
-        u8 data[2] = {};
-        wait_i2c_packet();
-        const bool ok = twi_.write_read(
-            I2C_ADDR,
-            &command,
-            sizeof(command),
-            data,
-            sizeof(data)
-        ).is_ok();
-        finish_i2c_packet();
-
-        if (!ok) {
-            return false;
-        }
-
-        value = static_cast<u16>(data[0])
-            | static_cast<u16>(static_cast<u16>(data[1]) << 8u);
-        return true;
-    }
-
-    bool read_s16(u8 command, s16& value) {
-        u16 raw = 0;
-        if (!read_word(command, raw)) {
-            return false;
-        }
-
-        value = static_cast<s16>(raw);
-        return true;
-    }
-
-    void wait_i2c_packet() {
-        if (!has_i2c_packet_time_) {
-            return;
-        }
-
-        const unsigned long elapsed_us = ::micros() - last_i2c_packet_us_;
-        if (elapsed_us >= BQ27421_I2C_PACKET_WAIT_US) {
-            return;
-        }
-
-        ::delayMicroseconds(
-            static_cast<unsigned int>(BQ27421_I2C_PACKET_WAIT_US - elapsed_us)
-        );
-    }
-
-    void finish_i2c_packet() noexcept {
-        last_i2c_packet_us_ = ::micros();
-        has_i2c_packet_time_ = true;
-    }
-
-    static constexpr u8 hi(u16 value) noexcept {
-        return static_cast<u8>(value >> 8u);
-    }
-
-    static constexpr u8 lo(u16 value) noexcept {
-        return static_cast<u8>(value & 0xFFu);
-    }
-
     static u8 checksum(const u8 (&data)[DATA_BLOCK_SIZE]) noexcept {
         u16 sum = 0;
-        for (u8 data_idx = 0; data_idx < DATA_BLOCK_SIZE; ++data_idx) {
+        for (std::size_t data_idx = 0; data_idx < DATA_BLOCK_SIZE; ++data_idx) {
             sum = static_cast<u16>(sum + data[data_idx]);
         }
         return static_cast<u8>(0xFFu - (sum & 0xFFu));

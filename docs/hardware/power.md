@@ -28,9 +28,11 @@ see also:
 ### BQ27421
 
 - provides battery state telemetry
-- firmware restores normal hibernate data-memory settings during startup
+- firmware restores battery-model and hibernate data-memory settings during
+	startup
 - firmware clears the hibernate request during startup while configuration is
 	restored
+- firmware does not modify Fast-Hibernate data-memory settings
 - periodic gauge updates read one cached value, then arm hibernate mode as the
 	last BQ27421 I2C access
 - actual hibernate entry happens when the gauge sees a relaxed cell and
@@ -76,7 +78,8 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 - each update reads one cached value from the BQ27421, then sends
 	`SET_HIBERNATE` as the last BQ27421 command
 - status uses cached `SOC` and `AverageCurrent`
-- detail logging uses cached `Voltage` and `FullChargeCapacity`
+- detail logging uses cached `Voltage`, `RemainingCapacity`, and
+	`FullChargeCapacity`
 - status and detail reads do not access the BQ27421 directly
 
 ### led rail

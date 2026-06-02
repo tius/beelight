@@ -38,7 +38,7 @@
     #define BQ27421_HIBERNATE_CURRENT_MA 3
 #endif
 #ifndef BQ27421_I2C_PACKET_WAIT_US
-    #define BQ27421_I2C_PACKET_WAIT_US 70
+    #define BQ27421_I2C_PACKET_WAIT_US 66
 #endif
 
 #define LOG_TAG         bq27421
@@ -84,6 +84,7 @@ public:
             ERR_READ_SOC,
             ERR_READ_CURRENT,
             ERR_READ_VOLTAGE,
+            ERR_READ_REMAINING_CAP,
             ERR_READ_FULL_CHARGE_CAP,
             ERR_ARM_HIBERNATE,
         };
@@ -94,6 +95,8 @@ public:
                 case ERR_READ_SOC:     return "read soc failed";
                 case ERR_READ_CURRENT: return "read current failed";
                 case ERR_READ_VOLTAGE: return "read voltage failed";
+                case ERR_READ_REMAINING_CAP:
+                    return "read remaining capacity failed";
                 case ERR_READ_FULL_CHARGE_CAP:
                     return "read full charge capacity failed";
                 case ERR_ARM_HIBERNATE: return "arm hibernate failed";
@@ -156,6 +159,7 @@ public:
 
         DetailsStatus read_state;
         u16 voltage_mv = 0;
+        u16 remaining_capacity_mah = 0;
         u16 full_charge_capacity_mah = 0;
 
         constexpr explicit operator bool() const noexcept {
@@ -165,6 +169,7 @@ public:
         constexpr bool operator==(const Details& other) const noexcept {
             return read_state.code == other.read_state.code
                 && voltage_mv == other.voltage_mv
+                && remaining_capacity_mah == other.remaining_capacity_mah
                 && full_charge_capacity_mah == other.full_charge_capacity_mah;
         }
 
@@ -177,8 +182,9 @@ public:
             }
 
             text.appendf(
-                "%umv %umAh",
+                "%umv rem=%umAh full=%umAh",
                 static_cast<unsigned>(voltage_mv),
+                static_cast<unsigned>(remaining_capacity_mah),
                 static_cast<unsigned>(full_charge_capacity_mah)
             );
             return buffer;
@@ -249,7 +255,9 @@ public:
             return details;
         }
 
-        if (!cache_has(CACHE_VOLTAGE | CACHE_FULL_CHARGE_CAP)) {
+        if (!cache_has(
+            CACHE_VOLTAGE | CACHE_REMAINING_CAP | CACHE_FULL_CHARGE_CAP
+        )) {
             details.read_state = { DetailsStatus::ERR_NOT_READY };
             return details;
         }
@@ -279,6 +287,7 @@ private:
     static constexpr u8 CMD_CONTROL         = 0x00;
     static constexpr u8 CMD_VOLTAGE         = 0x04;
     static constexpr u8 CMD_FLAGS           = 0x06;
+    static constexpr u8 CMD_REMAINING_CAPACITY = 0x0C;
     static constexpr u8 CMD_FULL_CHARGE_CAPACITY = 0x0E;
     static constexpr u8 CMD_AVERAGE_CURRENT = 0x10;
     static constexpr u8 CMD_SOC             = 0x1C;
@@ -305,21 +314,27 @@ private:
     static constexpr u16 INIT_COMPLETE_TIMEOUT_MS = 10000;
 
     static constexpr u8 SUBCLASS_POWER         = 68;
-    static constexpr u8 SUBCLASS_IT_CFG        = 80;
+    static constexpr u8 SUBCLASS_STATE         = 82;
 
     static constexpr u8 POWER_HIBERNATE_I      = 7;
     static constexpr u8 POWER_HIBERNATE_V      = 9;
 
-    static constexpr u8 IT_CFG_FH_SETTING_0    = 11;
-    static constexpr u8 IT_CFG_FH_SETTING_1    = 24;
-    static constexpr u8 IT_CFG_FH_SETTING_2    = 26;
-    static constexpr u8 IT_CFG_FH_SETTING_3    = 33;
+    static constexpr u8 STATE_DESIGN_CAPACITY  = 10;
+    static constexpr u8 STATE_DESIGN_ENERGY    = 12;
+    static constexpr u8 STATE_TERM_VOLTAGE     = 16;
+    static constexpr u8 STATE_TAPER_RATE       = 27;
 
+    static constexpr u16 NOMINAL_VOLTAGE_MV    = 3700;
     static constexpr u16 NORMAL_HIBERNATE_V_MV = 2200;
-    static constexpr u16 NORMAL_FH_SETTING_0   = 60;
-    static constexpr u16 NORMAL_FH_SETTING_1   = 100;
-    static constexpr u16 NORMAL_FH_SETTING_2   = 18000;
-    static constexpr u8 NORMAL_FH_SETTING_3    = 25;
+
+    static constexpr u16 DESIGN_ENERGY_MWH = static_cast<u16>(
+        (BQ27421_DESIGN_CAP_MAH * NOMINAL_VOLTAGE_MV) / 1000u
+    );
+    static constexpr u16 TAPER_RATE = static_cast<u16>(
+        BQ27421_TAPER_MA > 0
+            ? (10u * BQ27421_DESIGN_CAP_MAH) / BQ27421_TAPER_MA
+            : 0u
+    );
 
     static constexpr u8 DATA_BLOCK_SIZE        = 32;
 
@@ -332,13 +347,15 @@ private:
         CACHE_SOC             = 1u << 0u,
         CACHE_CURRENT         = 1u << 1u,
         CACHE_VOLTAGE         = 1u << 2u,
-        CACHE_FULL_CHARGE_CAP = 1u << 3u,
+        CACHE_REMAINING_CAP   = 1u << 3u,
+        CACHE_FULL_CHARGE_CAP = 1u << 4u,
     };
 
     enum UpdateStep : u8 {
         UPDATE_SOC = 0,
         UPDATE_CURRENT,
         UPDATE_VOLTAGE,
+        UPDATE_REMAINING_CAP,
         UPDATE_FULL_CHARGE_CAP,
         UPDATE_COUNT,
     };
@@ -368,6 +385,8 @@ private:
         BQ27421_I2C_PACKET_WAIT_US >= 66,
         "BQ27421_I2C_PACKET_WAIT_US must be at least 66"
     );
+    static_assert(DESIGN_ENERGY_MWH > 0, "design energy must be positive");
+    static_assert(TAPER_RATE > 0, "taper rate must be positive");
 
     lite::Twi&      twi_;
     DeviceStatus    device_status_;
@@ -376,6 +395,8 @@ private:
     u16             chem_id_ = 0;
     State           state_;
     Details         details_;
+    unsigned long   last_i2c_packet_us_ = 0;
+    bool            has_i2c_packet_time_ = false;
     u8              cache_flags_ = 0;
     u8              update_step_ = UPDATE_SOC;
 
@@ -387,6 +408,7 @@ private:
         if (twi_.probe(I2C_ADDR).is_error()) {
             return { DeviceStatus::ERR_PROBE };
         }
+        finish_i2c_packet();
 
         if (
                !read_control(CTRL_DEVICE_TYPE, device_type_)
@@ -396,7 +418,7 @@ private:
             return { DeviceStatus::ERR_READ_INFO };
         }
 
-        if (!configure_normal_hibernate()) {
+        if (!configure_data_memory()) {
             return { DeviceStatus::ERR_CONFIGURE };
         }
 
@@ -431,6 +453,7 @@ private:
             case UPDATE_SOC:             return update_soc();
             case UPDATE_CURRENT:         return update_current();
             case UPDATE_VOLTAGE:         return update_voltage();
+            case UPDATE_REMAINING_CAP:   return update_remaining_cap();
             case UPDATE_FULL_CHARGE_CAP: return update_full_charge_cap();
             default:                     return { UpdateStatus::ERR_READ_SOC };
         }
@@ -462,6 +485,18 @@ private:
         }
 
         set_cache_flag(CACHE_VOLTAGE);
+        return { UpdateStatus::OK };
+    }
+
+    UpdateStatus update_remaining_cap() {
+        if (!read_word(
+            CMD_REMAINING_CAPACITY,
+            details_.remaining_capacity_mah
+        )) {
+            return { UpdateStatus::ERR_READ_REMAINING_CAP };
+        }
+
+        set_cache_flag(CACHE_REMAINING_CAP);
         return { UpdateStatus::OK };
     }
 
@@ -498,38 +533,15 @@ private:
         );
     }
 
-    bool configure_normal_hibernate() {
-        return configure_hibernate(
-            BQ27421_HIBERNATE_CURRENT_MA,
-            NORMAL_HIBERNATE_V_MV,
-            NORMAL_FH_SETTING_0,
-            NORMAL_FH_SETTING_1,
-            NORMAL_FH_SETTING_2,
-            NORMAL_FH_SETTING_3
-        );
-    }
-
-    bool configure_hibernate(
-        u16 hibernate_current_ma,
-        u16 hibernate_voltage_mv,
-        u16 fh_setting_0,
-        u16 fh_setting_1,
-        u16 fh_setting_2,
-        u8 fh_setting_3
-    ) {
+    bool configure_data_memory() {
         if (!enter_cfg_update()) {
             return false;
         }
 
-        const bool configured = write_power_cfg(
-                hibernate_current_ma,
-                hibernate_voltage_mv
-            )
-            && write_it_cfg(
-                fh_setting_0,
-                fh_setting_1,
-                fh_setting_2,
-                fh_setting_3
+        const bool configured = write_state_cfg()
+            && write_power_cfg(
+                BQ27421_HIBERNATE_CURRENT_MA,
+                NORMAL_HIBERNATE_V_MV
             );
         const bool exited = exit_cfg_update();
 
@@ -552,6 +564,38 @@ private:
         return wait_flags(FLAG_CFGUPMODE, false, CFGUPDATE_TIMEOUT_MS);
     }
 
+    bool write_state_cfg() {
+        const DataPatch patches[] = {
+            { STATE_DESIGN_CAPACITY, hi(BQ27421_DESIGN_CAP_MAH) },
+            {
+                static_cast<u8>(STATE_DESIGN_CAPACITY + 1u),
+                lo(BQ27421_DESIGN_CAP_MAH)
+            },
+            { STATE_DESIGN_ENERGY, hi(DESIGN_ENERGY_MWH) },
+            {
+                static_cast<u8>(STATE_DESIGN_ENERGY + 1u),
+                lo(DESIGN_ENERGY_MWH)
+            },
+            { STATE_TERM_VOLTAGE, hi(BQ27421_TERM_VOLTAGE_MV) },
+            {
+                static_cast<u8>(STATE_TERM_VOLTAGE + 1u),
+                lo(BQ27421_TERM_VOLTAGE_MV)
+            },
+            { STATE_TAPER_RATE, hi(TAPER_RATE) },
+            {
+                static_cast<u8>(STATE_TAPER_RATE + 1u),
+                lo(TAPER_RATE)
+            },
+        };
+
+        return write_data_block(
+            SUBCLASS_STATE,
+            0,
+            patches,
+            static_cast<u8>(sizeof(patches) / sizeof(patches[0]))
+        );
+    }
+
     bool write_power_cfg(u16 hibernate_current_ma, u16 hibernate_voltage_mv) {
         const DataPatch patches[] = {
             { POWER_HIBERNATE_I, hi(hibernate_current_ma) },
@@ -572,45 +616,6 @@ private:
             patches,
             static_cast<u8>(sizeof(patches) / sizeof(patches[0]))
         );
-    }
-
-    bool write_it_cfg(
-        u16 fh_setting_0,
-        u16 fh_setting_1,
-        u16 fh_setting_2,
-        u8 fh_setting_3
-    ) {
-        const DataPatch block_0_patches[] = {
-            { IT_CFG_FH_SETTING_0, hi(fh_setting_0) },
-            { static_cast<u8>(IT_CFG_FH_SETTING_0 + 1u), lo(fh_setting_0) },
-            { IT_CFG_FH_SETTING_1, hi(fh_setting_1) },
-            { static_cast<u8>(IT_CFG_FH_SETTING_1 + 1u), lo(fh_setting_1) },
-            { IT_CFG_FH_SETTING_2, hi(fh_setting_2) },
-            { static_cast<u8>(IT_CFG_FH_SETTING_2 + 1u), lo(fh_setting_2) },
-        };
-        const DataPatch block_1_patches[] = {
-            {
-                static_cast<u8>(IT_CFG_FH_SETTING_3 % DATA_BLOCK_SIZE),
-                fh_setting_3
-            },
-        };
-
-        return write_data_block(
-                SUBCLASS_IT_CFG,
-                0,
-                block_0_patches,
-                static_cast<u8>(
-                    sizeof(block_0_patches) / sizeof(block_0_patches[0])
-                )
-            )
-            && write_data_block(
-                SUBCLASS_IT_CFG,
-                1,
-                block_1_patches,
-                static_cast<u8>(
-                    sizeof(block_1_patches) / sizeof(block_1_patches[0])
-                )
-            );
     }
 
     bool write_data_block(
@@ -667,13 +672,15 @@ private:
     bool read_data_block(u8 (&data)[DATA_BLOCK_SIZE]) {
         const u8 command = CMD_BLOCK_DATA;
         wait_i2c_packet();
-        return twi_.write_read(
+        const bool ok = twi_.write_read(
             I2C_ADDR,
             &command,
             sizeof(command),
             data,
             sizeof(data)
         ).is_ok();
+        finish_i2c_packet();
+        return ok;
     }
 
     bool verify_data_block(const DataPatch* patches, u8 patch_count) {
@@ -747,13 +754,24 @@ private:
 
     bool write_reg_u8(u8 command, u8 value) {
         wait_i2c_packet();
-        return twi_.write(I2C_ADDR, command, value).is_ok();
+        const bool ok = twi_.write(I2C_ADDR, command, value).is_ok();
+        finish_i2c_packet();
+        return ok;
     }
 
     bool read_word(u8 command, u16& value) {
         u8 data[2] = {};
         wait_i2c_packet();
-        if (twi_.write_read(I2C_ADDR, &command, sizeof(command), data, sizeof(data)).is_error()) {
+        const bool ok = twi_.write_read(
+            I2C_ADDR,
+            &command,
+            sizeof(command),
+            data,
+            sizeof(data)
+        ).is_ok();
+        finish_i2c_packet();
+
+        if (!ok) {
             return false;
         }
 
@@ -772,9 +790,24 @@ private:
         return true;
     }
 
-    static void wait_i2c_packet() {
-        //  bq27421 needs bus-free time between packets at 400 khz
-        ::delayMicroseconds(BQ27421_I2C_PACKET_WAIT_US);
+    void wait_i2c_packet() {
+        if (!has_i2c_packet_time_) {
+            return;
+        }
+
+        const unsigned long elapsed_us = ::micros() - last_i2c_packet_us_;
+        if (elapsed_us >= BQ27421_I2C_PACKET_WAIT_US) {
+            return;
+        }
+
+        ::delayMicroseconds(
+            static_cast<unsigned int>(BQ27421_I2C_PACKET_WAIT_US - elapsed_us)
+        );
+    }
+
+    void finish_i2c_packet() noexcept {
+        last_i2c_packet_us_ = ::micros();
+        has_i2c_packet_time_ = true;
     }
 
     static constexpr u8 hi(u16 value) noexcept {

@@ -145,7 +145,7 @@
 #define MP2667_TERM_MA          52          // charge termination current
 #define MP2667_DISCHARGE_MA     1000        // battery discharge current limit
 #define MP2667_BATTERY_REG_MV   4200        // battery regulation voltage
-#define MP2667_BATTERY_UVLO_MV  2800        // battery discharge cutoff threshold
+#define MP2667_BATTERY_UVLO_MV  3000        // battery discharge cutoff threshold
 #define MP2667_PRECHARGE_MV     3000        // pre-charge to fast-charge threshold
 #define MP2667_RECHARGE_MV      300         // recharge threshold below regulation
 #define MP2667_WATCHDOG_S       0           // I2C watchdog timeout, 0 disables it
@@ -162,6 +162,6 @@
 #define BQ27421_DESIGN_CAP_MAH  500         // nominal cell capacity
 #define BQ27421_TERM_VOLTAGE_MV 3000        // empty voltage threshold
 #define BQ27421_TAPER_MA        MP2667_TERM_MA // charge taper current
-#define BQ27421_CHARGE_DETECT_MA 5          // signed current charge threshold
-#define BQ27421_HIBERNATE_CURRENT_MA 3      // hibernate entry current
-#define BQ27421_I2C_PACKET_WAIT_US 70       // bus-free time at 400 kHz
+#define BQ27421_CHARGE_DETECT_MA        5   // signed current charge threshold
+#define BQ27421_HIBERNATE_CURRENT_MA    3   // hibernate entry current
+#define BQ27421_I2C_PACKET_WAIT_US      66  // bus-free time at 400 kHz

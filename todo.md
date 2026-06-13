@@ -1,13 +1,5 @@
 # to do - personal notes
 
-## kicad
-
-## breadboard
-
-## driver
-- bq hibernate prüfen
-- danach battery / bq etwas glätten
-
 ## low level
 - status led: helligkeit regeln
 - status led: fehler, charger, battery low ...
@@ -22,13 +14,19 @@
 - ir interaction
 - esp-now control
 - bump to pair
+- tv-b-gone
 
 ## toolkit
 - clean-up logging
 - check superloop load and latency
-- pixel dithering
+- [ temporal dithering ]
+- esp-now
+- modem sleep / light sleep?
+- persist
+- ota
 
 ## readme
+- api for apps
 - architektur, super-loop, heap-frei, event-bus ...
 - cooperative scheduling
 
@@ -46,6 +44,9 @@
 
 ## yagni
 - parameter charger und gauge optimieren
+- innenwiderstand akku testen
+- kalibrierung led-verbrauch
+- kalibrierung farbsensor
 - flash mem für cli, logging
 
 ## stil

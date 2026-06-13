@@ -8,3 +8,4 @@ output.txt
 lib/toolkit/
 docs/legacy/
 scripts/__pycache__/
+todo.md

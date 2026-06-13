@@ -18,7 +18,7 @@
 #define LOG_LEVEL   trace
 
 //=============================================================================
-class BackMorseBreath final : public lite::MorseCrtp<BackMorseBreath> {
+class BackMorseBreath final : public lite::WithMorse<BackMorseBreath> {
 //-----------------------------------------------------------------------------
 public:
 	explicit BackMorseBreath(BackLed& led)
@@ -44,7 +44,7 @@ public:
 
 //-----------------------------------------------------------------------------
 private:
-	class Breath final : public lite::BreathCrtp<Breath> {
+	class Breath final : public lite::WithBreath<Breath> {
 	public:
 		explicit Breath(BackMorseBreath& morse)
 			: morse_(morse) {}

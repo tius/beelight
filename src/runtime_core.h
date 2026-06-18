@@ -29,8 +29,32 @@
 //==============================================================================
 class RuntimeCore final {
 
-using u32 = lite::u32;
-using EventBus = event::Bus;
+using u32       = lite::u32;
+using EventBus  = event::Bus;
+
+//  generate timer offsets for periodic tasks to avoid simultaneous execution
+class TimerOffsets final {
+public:
+    lite::duration_ms next() noexcept {
+        offset_ += k_step;
+        if (offset_ >= k_period) {
+            offset_ -= k_period;
+        }
+        return lite::duration_ms{offset_};
+    }
+
+private:
+    static constexpr u32 k_period  = 1000u;
+    static constexpr u32 k_step    = 377u;
+
+    static_assert(
+        1 == lite::gcd_u32( k_period, k_step ),
+        "timer offset step must be coprime with period"
+    );
+
+    u32 offset_ = 0u;
+};
+
 //------------------------------------------------------------------------------
 public:
     explicit RuntimeCore(EventBus& event_bus)
@@ -55,7 +79,7 @@ public:
     void tick() {
         lite::Timer::spin(lite::now());
 
-        (void)event_queue_.tick();
+        event_queue_.tick();
 
         if (auto c = uart_.rx(); c >= 0) {
             console_.process(char(c));
@@ -85,30 +109,18 @@ public:
     }
 
     lite::duration_ms next_timer_offset() noexcept {
-        timer_offset_ += k_timer_offset_step;
-        if (timer_offset_ >= k_timer_offset_period) {
-            timer_offset_ -= k_timer_offset_period;
-        }
-        return lite::duration_ms{timer_offset_};
+        return timer_offsets_.next();
     }
 
 //------------------------------------------------------------------------------
 private:
-    static constexpr u32 k_timer_offset_period  = 1000u;
-    static constexpr u32 k_timer_offset_step    = 377u;
-
-    static_assert(
-        1 == lite::gcd_u32( k_timer_offset_period, k_timer_offset_step ),
-        "timer offset step must be coprime with period"
-    );
-
     using AppLogger = lite::CustomLogger<
         LOG_ANSI_COLOR,
         LOG_TIMESTAMP,
         LOG_LEVEL_PREFIX
     >;
 
-    u32                 timer_offset_ = 0u;
+    TimerOffsets        timer_offsets_{};
 
     EventBus&           event_bus_;
     event::Queue        event_queue_ {event_bus_};

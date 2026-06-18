@@ -79,7 +79,7 @@ private:
         core_.next_timer_offset()
     };
     Infrared            infrared_   {event_bus_};
-    FrontShow          front_show_  {core_.front_leds()};
+    FrontShow           front_show_ {core_.front_leds()};
 
     lite::Timer         timer_      { MSG_THIS(on_timer) };
 
@@ -87,7 +87,6 @@ private:
         if (event.id != event::Id::MORSE_CMD) {
             return;
         }
-
         on_morse_cmd(event.p1.morse_cmd);
     }
 
@@ -95,7 +94,6 @@ private:
         if (!cmd.is("HS")) {
             return;
         }
-
         boot::reboot(boot::Mode::hotspot);
     }
 

@@ -8,24 +8,22 @@
 
 namespace boot {
 
-enum class Mode : lite::u8 {
-    app = 0,
+using u8 = lite::u8;
+
+enum class Mode : u8 {
+    app         = 0,
     hotspot,
+    count_
 };
 
 //-----------------------------------------------------------------------------
-[[nodiscard]] constexpr bool is_valid(Mode mode) noexcept {
-    switch (mode) {
-        case Mode::app:
-        case Mode::hotspot:
-            return true;
-    }
-
-    return false;
+constexpr bool is_valid(Mode mode) noexcept {
+    return mode < Mode::count_;
 }
+    
 
 //-----------------------------------------------------------------------------
-[[nodiscard]] constexpr Mode normalize(Mode mode) noexcept {
+constexpr Mode normalize(Mode mode) noexcept {
     return is_valid(mode) ? mode : Mode::app;
 }
 

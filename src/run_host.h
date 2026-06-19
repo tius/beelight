@@ -23,12 +23,12 @@ public:
         auto mode = boot::startup_mode();
 
         switch (mode) {
-            case boot::Mode::app:
-                run_.emplace<AppRun>();
-                return;
-
             case boot::Mode::hotspot:
                 run_.emplace<HotspotRun>();
+                return;
+
+            default:
+                run_.emplace<AppRun>();
                 return;
         }
     }

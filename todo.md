@@ -1,20 +1,48 @@
 # to do - personal notes
 
-## low level
-- status led: helligkeit regeln
-- status led: fehler, charger, battery low ...
+## basics
 - ota
+- config store / persist / json
+- selbsttest
+
+## sleep mode
+- timer
+- radiowake
+
+## status led
+- helligkeit regeln
+- charger + battery
+
+## config interface
+- g-sensor?
 - httpd?
+
+## debug interface
 - telnetd?
+- ftpd?
+- radiocmd shell
+
+## api
+- animation sandbox
+
+## infrared
+- ir interaction
+- tv-b-gone
+
+## esp now
+- remote control
+- remote cli (debugging)
+
+## g-sensor
+- orientation
+- dance detection
+- bump to pair
+
+==========================================================
+
+## low level
 - station / wps
 - esp-now, cli, radiowake
-
-## high level
-- detect dancing
-- ir interaction
-- esp-now control
-- bump to pair
-- tv-b-gone
 
 ## toolkit
 - clean-up logging
@@ -33,7 +61,6 @@
 ## docs
 - gesamtstatus
 - ux dokument aufteilen
-- gebrauchsmuster anmelden
 
 ## build
 - tests build
@@ -51,7 +78,6 @@
 
 ## stil
 - weniger casts, insbesondere bei printf
-- WithXyz statt XyzCrtp
 - namen
 - clean-up codepath
 - kommentare

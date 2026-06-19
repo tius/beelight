@@ -22,6 +22,7 @@
 #include "lite/core/timer.h"
 #include "lite/cmd/sys_cmd.h"
 #include "lite/cmd/twi_cmd.h"
+#include "lite/cmd/fs_cmd.h"
 
 #define LOG_TAG         runtime
 #define LOG_LEVEL       trace
@@ -137,6 +138,9 @@ private:
 
     lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
     lite::cmd::TwiCmd   twi_cmd_    {shell_, twi_};
+
+    lite::Fs            fs_         {};
+    lite::cmd::FsCmd    fs_cmd_     {shell_, fs_};
 
     Battery             battery_    {twi_, event_bus_, next_timer_offset()};
     Power               power_      {twi_, event_bus_, next_timer_offset()};

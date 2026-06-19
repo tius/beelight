@@ -23,6 +23,8 @@
 #define LOG_TAG         hotspot
 #define LOG_LEVEL       trace
 
+using u8 = lite::u8;
+
 //=============================================================================
 class HotspotRun final {
 //-----------------------------------------------------------------------------
@@ -41,9 +43,8 @@ public:
 
 //-----------------------------------------------------------------------------
 private:
-    static constexpr auto DEVICE_ID_HEX_LEN = 6;
-    static constexpr auto SSID_SIZE =
-        sizeof(HOTSPOT_SSID_PREFIX) + DEVICE_ID_HEX_LEN;
+    static constexpr auto SUFFIX_LEN = 6;
+    static constexpr auto SSID_SIZE = sizeof(HOTSPOT_SSID_PREFIX) + SUFFIX_LEN;
 
     static_assert(SSID_SIZE <= 33);
     static_assert(sizeof(HOTSPOT_PSK) >= 9);
@@ -57,12 +58,13 @@ private:
         .lease_end      = HOTSPOT_LEASE_END,
     };
 
-    event::Bus event_bus_ {};
-    RuntimeCore core_ {event_bus_};
-    lite::esp8266::Hotspot hotspot_ {};
-    char ssid_[SSID_SIZE] {};
-    lite::u8 client_count_ = 0u;
-    bool started_ = false;
+    event::Bus          event_bus_      {};
+    RuntimeCore         core_           {event_bus_};
+    lite::esp8266::Hotspot hotspot_     {};
+    
+    char            ssid_[SSID_SIZE]    {};
+    u8              client_count_       = 0u;
+    bool            started_            = false;
 
     void start_hotspot() {
         const auto status = hotspot_.start(ssid_, HOTSPOT_PSK, DHCP_CFG);
@@ -77,11 +79,7 @@ private:
 
         const auto ip = hotspot_.ip();
         char ip_buf[16];
-        LOG_INFO(
-            "started ssid=%s ip=%s",
-            ssid_,
-            ip.fmt(ip_buf)
-        );
+        LOG_INFO("started ssid=%s ip=%s", ssid_, ip.fmt(ip_buf));
 
         post_started(ip);
         post_client_count(client_count_);

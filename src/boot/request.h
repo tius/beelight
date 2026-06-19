@@ -19,7 +19,7 @@ inline void reboot(Mode mode) {
 }
 
 //-----------------------------------------------------------------------------
-[[nodiscard]] inline Mode startup_mode() {
+inline Mode startup_mode() {
     auto request = rtc::boot_request();
 
     const Mode mode = request.get();

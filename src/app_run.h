@@ -20,11 +20,14 @@
 #include "lite/sys/deep_sleep.h"
 #include "lite/core/timer.h"
 #include "lite/cli/cmd.h"
-
-#include <cstring>
+#include "lite/config/field.h"
+#include "lite/config/store.h"
 
 #define LOG_TAG         app
 #define LOG_LEVEL       trace
+
+// short alias for config field declarations below
+namespace cfg = lite::config;
 
 //==============================================================================
 class AppRun {
@@ -32,6 +35,7 @@ class AppRun {
 public:
     AppRun() {
         update_boot_count();
+        load_config();
 
         if (!light_meter_) {
             LOG_ERROR("light meter not available: %s", light_meter_.status().str());
@@ -67,6 +71,16 @@ private:
 
     RuntimeCore         core_       {event_bus_};
     event::Hook         boot_hook_  {event_bus_, METHOD_THIS(on_event)};
+
+    // application config section, registered for cli (set app ...)
+    struct AppSection : cfg::Section {
+        AppSection() : Section("app") {}
+
+        cfg::Field<cfg::Spec<int>{.def=60, .min=0, .max=3600}> sleep  { *this, "sleep"  };
+        cfg::Field<cfg::Spec<int>{.def=80, .min=0, .max=100 }> bright { *this, "bright" };
+    };
+
+    AppSection          app_section_ {};
 
     LightMeter          light_meter_{
         core_.twi(),
@@ -104,6 +118,14 @@ private:
         rtc_boot_count = boot_count;
 
         LOG_INFO("boot count: %lu", static_cast<unsigned long>(boot_count));
+    }
+
+    // load app config from "/app.cfg" and log the active values
+    void load_config() {
+        auto config = cfg::load(core_.fs(), app_section_.name());
+
+        LOG_INFO("config: sleep=%d bright=%d",
+            app_section_.sleep.from(config), app_section_.bright.from(config));
     }
 
     void on_timer() {

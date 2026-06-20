@@ -23,6 +23,7 @@
 #include "lite/cmd/sys_cmd.h"
 #include "lite/cmd/twi_cmd.h"
 #include "lite/cmd/fs_cmd.h"
+#include "lite/cmd/config_cmd.h"
 
 #define LOG_TAG         runtime
 #define LOG_LEVEL       trace
@@ -109,6 +110,10 @@ public:
         return twi_;
     }
 
+    auto& fs() noexcept {
+        return fs_;
+    }
+
     lite::duration_ms next_timer_offset() noexcept {
         return timer_offsets_.next();
     }
@@ -141,6 +146,7 @@ private:
 
     lite::Fs            fs_         {};
     lite::cmd::FsCmd    fs_cmd_     {shell_, fs_};
+    lite::cmd::ConfigCmd config_cmd_ {shell_, fs_};
 
     Battery             battery_    {twi_, event_bus_, next_timer_offset()};
     Power               power_      {twi_, event_bus_, next_timer_offset()};

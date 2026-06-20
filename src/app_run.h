@@ -72,15 +72,15 @@ private:
     RuntimeCore         core_       {event_bus_};
     event::Hook         boot_hook_  {event_bus_, METHOD_THIS(on_event)};
 
-    // application config section, registered for cli (set app ...)
-    struct AppSection : cfg::Section {
-        AppSection() : Section("app") {}
-
-        cfg::Field<cfg::Spec<int>{.def=60, .min=0, .max=3600}> sleep  { *this, "sleep"  };
-        cfg::Field<cfg::Spec<int>{.def=80, .min=0, .max=100 }> bright { *this, "bright" };
-    };
-
-    AppSection          app_section_ {};
+    // application config fields, registered for cli (set app ...)
+    // section and fields live in one struct: a field references its section
+    // at construction, so they must share the same scope
+    struct Fields {
+        cfg::Section            section { "app" };
+        cfg::Field<int>         sleep   { section, "sleep",  60, 0, 3600 };
+        cfg::Field<int>         bright  { section, "bright", 80, 0, 100  };
+        cfg::Field<const char*> label   { section, "label",  "bee", 1, 15 };
+    } fields_;
 
     LightMeter          light_meter_{
         core_.twi(),
@@ -122,10 +122,14 @@ private:
 
     // load app config from "/app.cfg" and log the active values
     void load_config() {
-        auto config = cfg::load(core_.fs(), app_section_.name());
+        auto config = cfg::load(core_.fs(), fields_.section.name());
 
-        LOG_INFO("config: sleep=%d bright=%d",
-            app_section_.sleep.from(config), app_section_.bright.from(config));
+        char label[16];
+        LOG_INFO("config: sleep=%d bright=%d label=%s",
+            fields_.sleep.from(config), 
+            fields_.bright.from(config),
+            fields_.label.from(config, label)
+        );
     }
 
     void on_timer() {

@@ -3,6 +3,7 @@
 ## basics
 - ota
 - config store / persist / json
+- fs als singleton?
 - selbsttest
 
 ## sleep mode

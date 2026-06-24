@@ -10,7 +10,11 @@
             "matchCommandLine": true
         },
         "Test-Path": true,
-        "Get-Item": true
+        "Get-Item": true,
+        "/^& \"\\$env:USERPROFILE\\\\\\.platformio\\\\penv\\\\Scripts\\\\platformio\\.exe\" run -e bee_rysta 2>&1 \\| Select-Object -Last 12$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     },
     "cmake.sourceDirectory": "D:/proj/lite/beelight/lib/litekit"
 }

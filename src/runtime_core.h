@@ -26,7 +26,7 @@
 #include "lite/cmd/config_cmd.h"
 
 #define LOG_TAG         runtime
-#define LOG_LEVEL       trace
+#define LOG_LEVEL       RUNTIME_LOG
 
 //==============================================================================
 class RuntimeCore final {
@@ -126,6 +126,14 @@ private:
         LOG_LEVEL_PREFIX
     >;
 
+    // boot phase profiling: each line's log timestamp prefix shows how long
+    // the preceding construction phase took; enable via RUNTIME_LOG=trace
+    struct TimeMark {
+        explicit TimeMark(const char* phase) {
+            LOG_TRACE("boot: %s", phase);
+        }
+    };
+
     TimerOffsets        timer_offsets_{};
 
     EventBus&           event_bus_;
@@ -136,6 +144,8 @@ private:
     lite::StdOut        std_out_    {serial_out_};
     AppLogger           logger_     {serial_out_};
 
+    TimeMark            mark_log_   {"log ready"};
+
     lite::CmdShell      shell_      {};
     lite::Console       console_    {shell_, serial_out_};
 
@@ -144,12 +154,21 @@ private:
     lite::Twi           twi_        {I2C_SDA_GPIO, I2C_SCL_GPIO, I2C_CLOCK_HZ};
     lite::cmd::TwiCmd   twi_cmd_    {shell_, twi_};
 
+    TimeMark            mark_twi_   {"twi ready"};
+
     lite::Fs            fs_         {};
     lite::cmd::FsCmd    fs_cmd_     {shell_, fs_};
     lite::cmd::ConfigCmd config_cmd_ {shell_, fs_};
 
+    TimeMark            mark_fs_    {"fs ready"};
+
     Battery             battery_    {twi_, event_bus_, next_timer_offset()};
+
+    TimeMark            mark_bat_   {"battery ready"};
+
     Power               power_      {twi_, event_bus_, next_timer_offset()};
+
+    TimeMark            mark_pwr_   {"power ready"};
 
     BackLed             back_led_   {};
     BackShow            back_show_  {back_led_, event_bus_};

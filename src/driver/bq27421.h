@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
 
 #include <Arduino.h>
@@ -530,10 +531,12 @@ private:
     }
 
     DeviceStatus init() {
+        LOG_TRACE("init: probe");
         if (!regs_.probe()) {
             return { DeviceStatus::ERR_PROBE };
         }
 
+        LOG_TRACE("init: read info");
         if (
                !regs_.read_control(CTRL_DEVICE_TYPE, device_type_)
             || !regs_.read_control(CTRL_FW_VERSION, firmware_version_)
@@ -542,18 +545,35 @@ private:
             return { DeviceStatus::ERR_READ_INFO };
         }
 
-        if (!configure_data_memory()) {
-            return { DeviceStatus::ERR_CONFIGURE };
+        // skip the costly cfg-update + soft-reset + re-init (~4s) when the
+        // gauge already holds our configuration; it persists across mcu
+        // resets and is only lost on battery removal
+        const bool needs_config = !data_memory_configured();
+        if (needs_config) {
+            LOG_INFO("init: configuring data memory");
+            if (!configure_data_memory()) {
+                return { DeviceStatus::ERR_CONFIGURE };
+            }
+        }
+        else {
+            LOG_DEBUG("init: already configured");
         }
 
+        LOG_TRACE("init: clear hibernate");
         if (!clear_hibernate()) {
             return { DeviceStatus::ERR_CLEAR_HIBERNATE };
         }
 
-        if (!wait_init_complete()) {
-            return { DeviceStatus::ERR_WAIT_INIT_COMPLETE };
+        // only the fresh-config path soft-resets the gauge and must wait for
+        // re-initialization to complete
+        if (needs_config) {
+            LOG_TRACE("init: wait init complete");
+            if (!wait_init_complete()) {
+                return { DeviceStatus::ERR_WAIT_INIT_COMPLETE };
+            }
         }
 
+        LOG_TRACE("init: done");
         return { DeviceStatus::OK };
     }
 
@@ -644,16 +664,21 @@ private:
         );
     }
 
+    // read-only check whether data memory already holds our configuration,
+    // so init can skip the costly cfg-update + soft-reset sequence
+    bool data_memory_configured() {
+        const auto state = state_patches();
+        const auto power = power_patches();
+        return check_data_block(SUBCLASS_STATE, 0, state.data(), state.size())
+            && check_data_block(SUBCLASS_POWER, 0, power.data(), power.size());
+    }
+
     bool configure_data_memory() {
         if (!enter_cfg_update()) {
             return false;
         }
 
-        const bool configured = write_state_cfg()
-            && write_power_cfg(
-                BQ27421_HIBERNATE_CURRENT_MA,
-                NORMAL_HIBERNATE_V_MV
-            );
+        const bool configured = write_state_cfg() && write_power_cfg();
         const bool exited = exit_cfg_update();
 
         return configured && exited;
@@ -675,8 +700,8 @@ private:
         return wait_flags(FLAG_CFGUPMODE, false, CFGUPDATE_TIMEOUT_MS);
     }
 
-    bool write_state_cfg() {
-        const DataPatch patches[] = {
+    std::array<DataPatch, 8> state_patches() const {
+        return {{
             patch_hi_byte(STATE_DESIGN_CAPACITY, BQ27421_DESIGN_CAP_MAH),
             patch_lo_byte(STATE_DESIGN_CAPACITY, BQ27421_DESIGN_CAP_MAH),
             patch_hi_byte(STATE_DESIGN_ENERGY, DESIGN_ENERGY_MWH),
@@ -685,26 +710,43 @@ private:
             patch_lo_byte(STATE_TERM_VOLTAGE, BQ27421_TERM_VOLTAGE_MV),
             patch_hi_byte(STATE_TAPER_RATE, TAPER_RATE),
             patch_lo_byte(STATE_TAPER_RATE, TAPER_RATE),
-        };
-
-        return write_data_block(SUBCLASS_STATE, 0, patches);
+        }};
     }
 
-    bool write_power_cfg(u16 hibernate_current_ma, u16 hibernate_voltage_mv) {
-        const DataPatch patches[] = {
-            patch_hi_byte(POWER_HIBERNATE_I, hibernate_current_ma),
-            patch_lo_byte(POWER_HIBERNATE_I, hibernate_current_ma),
-            patch_hi_byte(POWER_HIBERNATE_V, hibernate_voltage_mv),
-            patch_lo_byte(POWER_HIBERNATE_V, hibernate_voltage_mv),
-        };
-
-        return write_data_block(SUBCLASS_POWER, 0, patches);
+    std::array<DataPatch, 4> power_patches() const {
+        return {{
+            patch_hi_byte(POWER_HIBERNATE_I, BQ27421_HIBERNATE_CURRENT_MA),
+            patch_lo_byte(POWER_HIBERNATE_I, BQ27421_HIBERNATE_CURRENT_MA),
+            patch_hi_byte(POWER_HIBERNATE_V, NORMAL_HIBERNATE_V_MV),
+            patch_lo_byte(POWER_HIBERNATE_V, NORMAL_HIBERNATE_V_MV),
+        }};
     }
 
-    template <std::size_t N>
-    bool write_data_block(u8 subclass, u8 block_idx, const DataPatch (&patches)[N]) {
-        static_assert(N <= 0xFFu, "too many data patches");
-        return write_data_block(subclass, block_idx, patches, N);
+    bool write_state_cfg() {
+        const auto patches = state_patches();
+        return write_data_block(
+            SUBCLASS_STATE, 0, patches.data(), patches.size()
+        );
+    }
+
+    bool write_power_cfg() {
+        const auto patches = power_patches();
+        return write_data_block(
+            SUBCLASS_POWER, 0, patches.data(), patches.size()
+        );
+    }
+
+    // select a data block and verify the patched bytes without writing
+    bool check_data_block(
+        u8 subclass,
+        u8 block_idx,
+        const DataPatch* patches,
+        std::size_t patch_count
+    ) {
+        if (!select_data_block(subclass, block_idx)) {
+            return false;
+        }
+        return verify_data_block(patches, patch_count);
     }
 
     bool write_data_block(

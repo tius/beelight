@@ -1,10 +1,18 @@
 # to do - personal notes
 
+- slow boot
+- check morse
+- deployment / claiming
+
 ## basics
-- ota
-- config store / persist / json
+- ota (signiert, ext. power / high battery)
 - fs als singleton?
 - selbsttest
+
+## wifi client mode
+- connect / disconnect / autoconnect?
+- scan?
+
 
 ## sleep mode
 - timer
@@ -38,6 +46,29 @@
 - orientation
 - dance detection
 - bump to pair
+
+claim
+- tap, double-tap
+- schütteln
+- flat / face-up / face-down
+
+==========================================================
+hardware setup
+- sägen
+- firmware
+- qr-code?
+
+claim
+- feste ssid
+- animation / status-led "claimable" 
+- browser zeigt "tap n times"
+- user tap
+- browser zeigt gleiche individuelle "claimed" animation wie bee
+- optional: lichtsensor mit farberkennung vor display
+- optional: ir-remote
+
+
+
 
 ==========================================================
 

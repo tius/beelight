@@ -22,8 +22,14 @@
 //   global log settings
 //------------------------------------------------------------------------------
 #define LOG_ANSI_COLOR          true        // enable ansi colors
-#define LOG_TIMESTAMP           false       // enable log timestamps
+#define LOG_TIMESTAMP           true        // enable log timestamps
 #define LOG_LEVEL_PREFIX        false       // enable log level prefix
+
+//==============================================================================
+//   runtime settings
+//------------------------------------------------------------------------------
+#define RUNTIME_LOG             debug       // log level for runtime/boot events
+                                            // set trace for boot phase timing
 
 //==============================================================================
 //   event logger settings
@@ -72,13 +78,13 @@
 //==============================================================================
 //  infrared receiver settings
 //------------------------------------------------------------------------------
-#define IR_RX_LOG               none        // log level for ir receiver events
+#define IR_RX_LOG               debug       // log level for ir receiver events
 #define IR_RX_GPIO              4           // pin number for infrared receiver data
 
 //==============================================================================
 //  infrared transmitter settings
 //------------------------------------------------------------------------------
-#define IR_TX_LOG               none        // log level for ir transmitter events
+#define IR_TX_LOG               debug       // log level for ir transmitter events
 #define IR_TX_GPIO              5           // pin number for infrared transmitter data
 #define IR_TX_ACTIVE_LOW        false       // drive low to turn ir led on
 
@@ -105,18 +111,18 @@
 //==============================================================================
 //  light sensor settings
 //------------------------------------------------------------------------------
-#define LIGHT_SENSOR_LOG        none        // log level for light sensor events
+#define LIGHT_SENSOR_LOG        debug       // log level for light sensor events
 #define LIGHT_SENSOR_TYPE       VEML3328    // type of light sensor in the system
 
 //==============================================================================
 //  accelerometer settings
 //------------------------------------------------------------------------------
-#define ACC_METER_LOG           none        // log level for accelerometer events
+#define ACC_METER_LOG           debug       // log level for accelerometer events
 
 //==============================================================================
 //  infrared settings
 //------------------------------------------------------------------------------
-#define INFRARED_LOG            none        // log level for infrared events
+#define INFRARED_LOG            debug       // log level for infrared events
 #define INFRARED_TX_DRIVER      TIMER1      // driver for infrared transmitter
 
 //==============================================================================
@@ -127,7 +133,7 @@
 //==============================================================================
 //  veml3328 driver settings
 //------------------------------------------------------------------------------
-#define VEML3328_LOG            none        // log level for veml3328 events
+#define VEML3328_LOG            debug       // log level for veml3328 events
 
 //==============================================================================
 //  bma253 driver settings
@@ -137,7 +143,7 @@
 //==============================================================================
 //  mp2667 driver settings
 //------------------------------------------------------------------------------
-#define MP2667_LOG              trace       // log level for mp2667 events
+#define MP2667_LOG              debug       // log level for mp2667 events
 #define MP2667_I2C_ADDR         0x09        // I2C address of mp2667 charger
 #define MP2667_INPUT_MIN_MV     4600        // input voltage regulation limit
 #define MP2667_INPUT_MA         470         // input current limit
@@ -157,7 +163,8 @@
 //==============================================================================
 //  bq27421 driver settings
 //------------------------------------------------------------------------------
-#define BQ27421_LOG             trace       // log level for bq27421 events
+#define BQ27421_LOG             info        // log level for bq27421 events
+                                            // set trace for init step timing
 #define BQ27421_I2C_ADDR        0x55        // I2C address of battery gauge
 #define BQ27421_DESIGN_CAP_MAH  500         // nominal cell capacity
 #define BQ27421_TERM_VOLTAGE_MV 3000        // empty voltage threshold

@@ -22,8 +22,9 @@ see also:
 
 - configurable charger with power-path
 - provides power off behavior via shipping mode
-- MCU enters shipping mode via I2C
-- requirement: MP2667 can leave shipping mode only via INT
+- MCU enters shipping mode via I2C (`FET_DIS`)
+- MP2667 can also cut battery discharge path when `INT` is held low for >8 s
+- MP2667 can exit shipping mode by pulling `INT` low for >500 ms
 
 ### BQ27421
 
@@ -50,6 +51,8 @@ see also:
 - the on-board Rysta button is not used in this product
 - a separate rear button on the piggyback drives WAKE via a diode-isolated path
 - the same rear button drives MP2667 INT via a second diode-isolated path
+- consequence: a long rear-button hold can trigger MP2667 INT timing behavior
+	independent of firmware
 - BQ27421 GPOUT is not connected to the wake/reset path, only pull-up is
 	present
 
@@ -115,6 +118,8 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 - operation can run from battery or USB-C input
 - MCU can read active power source from MP2667 via I2C
 - firmware reads battery discharge current through the periodic BQ27421 update
+- with external USB-C power present, a long rear-button hold (>8 s on INT)
+	can disconnect the battery while the system keeps running from input power
 
 ## standby mode
 
@@ -133,5 +138,5 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 	automatically when its own conditions are met
 - BQ27421 shutdown mode is not used, to preserve learned battery data and
 	avoid wake problems
-- exit from shipping mode requires MP2667 INT
+- exit from shipping mode requires MP2667 INT low pulse (>500 ms)
 - current well below 10 uA is targeted

@@ -44,12 +44,14 @@ see also:
 
 - isolates the led rail from the system rail when switched off
 
-### Rysta wake logic
+### Wake and reset wiring
 
-- provides button-driven reset pulse generation on RST
-- wake signal is routed via diode to MP2667 INT
-- RST signal is routed via diode to BQ27421 GPOUT
-- BQ27421 GPOUT wake path remains wired but is not used in normal firmware
+- Rysta wake circuit generates a short RST pulse when WAKE goes low
+- the on-board Rysta button is not used in this product
+- a separate rear button on the piggyback drives WAKE via a diode-isolated path
+- the same rear button drives MP2667 INT via a second diode-isolated path
+- BQ27421 GPOUT is not connected to the wake/reset path, only pull-up is
+	present
 
 ## power flow
 
@@ -95,8 +97,10 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 ## signal flow
 
 - MP2667 and BQ27421 are controlled by the MCU via I2C
-- button triggers an RST pulse via wake logic on Rysta
-- wake and RST diode routing is defined in "Rysta wake logic" above
+- piggyback rear button pulls WAKE low and triggers an RST pulse via Rysta
+	wake logic
+- piggyback rear button also feeds MP2667 INT via a diode-isolated path
+- wake wiring is defined in "Wake and reset wiring" above
 
 ## charging mode
 
@@ -116,7 +120,7 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 
 - MCU enters deep sleep
 - MCU switches off the led rail before deep sleep
-- wake is possible via ESP deep sleep timer or button
+- wake is possible via ESP deep sleep timer or piggyback rear button
 - current below 100 uA is targeted
 
 ## power off

@@ -12,6 +12,14 @@ how it is used in any specific product lives elsewhere.
 - on-board RGB LED
 - breakout connector X3 for power and signals
 
+## integration note (bee.light)
+
+- on-board Rysta button exists electrically but is not used in this product
+- product uses a separate rear button on piggyback
+- piggyback rear button is diode-isolated to `WAKE` (`GPIO 16`) and MP2667
+	`INT`
+- Rysta wake-circuit behavior in this document remains unchanged
+
 ## MCU
 
 - ESP8266EX
@@ -24,7 +32,6 @@ how it is used in any specific product lives elsewhere.
 - on-board LDO from 5V to 3.3V
 - LDO drop ~100 mV at ~100 mA
 - idle current via LDO ~80 µA in deep sleep at 3.7V input
-
 
 ## on-board button and wake circuit
 

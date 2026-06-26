@@ -7,12 +7,14 @@ dedicated documents.
 
 ### Rysta board
 - existing board, product back
-- MCU ESP8266EX, rear RGB LED, button, wake logic, and LDO
+- MCU ESP8266EX, rear RGB LED, wake logic, and LDO
+- on-board Rysta button exists but is not used in the product
 - see [rysta.md](rysta.md)
 
 ### piggyback board
 - custom daughter PCB, product front
 - charging logic, IR RX + TX, WS2812, and light sensor
+- connector for the rear product button, diode-isolated to WAKE and MP2667 INT
 - [piggyback.md](piggyback.md)
 
 ### battery

@@ -70,14 +70,14 @@ visible product front.
 
 ## off-mode wake wiring
 
-MP2667 and BQ27421 each have a dedicated control pin used as **input** on
-this board (not as output). Both pins are tied to the Rysta wake lines
-through diodes. Normal firmware uses MP2667 shipping mode. BQ27421 hibernate
-mode is kept armed by periodic gauge updates.
+A separate rear button is on this board and is used for wake and reset in the
+product. The Rysta on-board button is not used. Normal firmware uses MP2667
+shipping mode. BQ27421 hibernate mode is kept armed by periodic gauge updates.
 
-- MP2667 `INT` (input) -- diode -- Rysta `GPIO 16` / WAKE line
-- BQ27421 `GPOUT` (input) -- diode -- Rysta `RST` line
-- diode parts: BAT54W for INT and GPOUT paths
+- rear button -- diode -- Rysta `GPIO 16` / WAKE line
+- rear button -- diode -- MP2667 `INT` (input)
+- BQ27421 `GPOUT` is not connected to the wake/reset path, pull-up only
+- diode parts: BAT54W for WAKE and INT paths
 - see [power.md](power.md) for shipping and hibernate behavior
 
 ## mechanical

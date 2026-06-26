@@ -15,4 +15,4 @@ product-level gpio mapping across Rysta and piggyback.
 | rear led r   | `gpio 15` | `n/a`          | out | active high, must be low on boot         |
 | rear led g   | `gpio 12` | `n/a`          | out | active high                              |
 | rear led b   | `gpio 14` | `n/a`          | out | active high                              |
-| button       | `gpio 16` | `n/a`          | in  | rear button -> RST pulse (Rysta), also drives MP2667 INT |
+| button       | `gpio 16` | `n/a`          | in  | piggyback rear button -> WAKE/RST pulse, diode-isolated to MP2667 INT; Rysta button unused |

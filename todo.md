@@ -1,8 +1,26 @@
 # to do - personal notes
 
-- slow boot
+## initial flash
+- pogo pin adapter
+
+## initial firmware
+- detect missing piggyback board
+- show status via led
+- connect to predefined wifi network
+- request ota
+
+
+
+
+
 - check morse
 - deployment / claiming
+- effect engine
+- ir interaction
+- radio interaction
+- g interaction
+- deep sleep
+- wake on button, radio, ir, g
 
 ## basics
 - ota (signiert, ext. power / high battery)

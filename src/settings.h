@@ -56,6 +56,12 @@
 #define BUTTON_SHUTDOWN_HOLD_MS 7000        // hold duration for gauge shutdown
 
 //==============================================================================
+//  button probe settings
+//------------------------------------------------------------------------------
+#define BUTTON_PROBE_LOG            debug   // log level for button probe events
+#define BUTTON_PROBE_MAX_WAIT        7500    // hard ceiling, under mp2667 8s limit
+
+//==============================================================================
 //  wake info settings
 //------------------------------------------------------------------------------
 #define WAKE_INFO_LOG           none        // log level for wake button events

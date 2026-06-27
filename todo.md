@@ -3,15 +3,20 @@
 ## initial flash
 - pogo pin adapter
 
-## initial firmware
-- detect missing piggyback board
-- show status via led
+## recovery mode
 - connect to predefined wifi network
 - request ota
+- repair morse
+
+## power control
+- on
+- off
+ 
 
 
 
 
+==========
 
 - check morse
 - deployment / claiming

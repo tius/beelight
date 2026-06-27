@@ -121,7 +121,16 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 - with external USB-C power present, a long rear-button hold (>8 s on INT)
 	can disconnect the battery while the system keeps running from input power
 
-### corner case: int-triggered battery disconnect under external power
+### corner case: expected int-triggered battery disconnect
+
+- with external USB-C power present, INT low for >8 s disconnects the battery
+	path while the system can continue running from input power
+- without external input, the same transition removes system supply and the
+	device powers off
+- this transition is driven by MP2667 INT timing and is independent of
+	firmware control
+
+### rare undefined behavior after int-triggered disconnect
 
 - in rare cases, the sequence above can lead to an undefined operating state
 - observed symptoms can include incomplete boot, unstable system voltage, and
@@ -140,6 +149,19 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 - recovery sequence:
 	- disconnect external power
 	- toggle shipping mode off/on via rear-button sequence
+
+### options to infer shipping mode in firmware
+
+- MP2667 does not provide a dedicated persistent shipping-state flag
+- a practical heuristic is to detect a stable REG07 transition from charging or
+	charge-done to not-charging while power-good remains high
+- this heuristic could be combined with timing context from the rear-button
+	hold window around the expected INT threshold
+- REG06 `FET_DIS` is not a reliable detector because the bit can auto-clear
+	after battery FET off
+- REG08 fault bits can provide hints but are not sufficient as a primary
+	shipping detector
+- classify the result as shipping-likely, not shipping-confirmed
 
 ## standby mode
 

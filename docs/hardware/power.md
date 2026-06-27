@@ -121,6 +121,26 @@ Rysta +5V rail -> high-side switch TPS22917L -> polyfuse 1.5 A -> VLED (WS2812)
 - with external USB-C power present, a long rear-button hold (>8 s on INT)
 	can disconnect the battery while the system keeps running from input power
 
+### corner case: int-triggered battery disconnect under external power
+
+- in rare cases, the sequence above can lead to an undefined operating state
+- observed symptoms can include incomplete boot, unstable system voltage, and
+	unavailable I2C devices
+- the behavior is intermittent and currently not reliably reproducible
+- working hypothesis (not confirmed):
+	- MP2667 may enter a temporary undefined internal state after INT-triggered
+		battery disconnect while external power remains present
+	- the unstable state may only become visible on the next reset
+	- one observed symptom pattern is boot-loop-like startup with only early boot
+		messages and about 2V on the system rail
+	- after a shipping-mode off transition, the LDO path may recover while I2C
+		can remain blocked until full power removal
+	- a plausible cause is startup reconfiguration while MP2667 is in a corner
+		state, this remains speculation
+- recovery sequence:
+	- disconnect external power
+	- toggle shipping mode off/on via rear-button sequence
+
 ## standby mode
 
 - MCU enters deep sleep

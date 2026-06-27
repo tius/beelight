@@ -11,6 +11,7 @@
 #include "hotspot_run.h"
 #include "boot/request.h"
 #include "boot/button_probe.h"
+#include "boot/uptime_probe.h"
 
 #include "lite/sys/uart.h"
 #include "lite/io/serial_out.h"
@@ -29,9 +30,12 @@ public:
     }
 
     void setup() {
-        ButtonProbe probe;
-        auto hold_ms = probe.wait_release(BUTTON_PROBE_MAX_WAIT);
-        LOG_INFO("boot hold: %lu ms", static_cast<unsigned long>(hold_ms));
+        ButtonProbe button;
+        auto hold_ms = button.wait_release(BUTTON_PROBE_MAX_WAIT);
+        auto prev_uptime = uptime_.track();
+        LOG_INFO("boot hold: %lu ms, prev uptime: %u ms",
+            static_cast<unsigned long>(hold_ms),
+            static_cast<unsigned>(prev_uptime));
 
         auto mode = boot::startup_mode();
 
@@ -76,6 +80,8 @@ private:
     lite::SerialOut     serial_out_ {uart_, "\n-----\n"};
     lite::StdOut        std_out_    {serial_out_};
     AppLogger           logger_     {serial_out_};
+
+    UptimeProbe         uptime_;
 
     //  runtime selection and dispatch
     Run run_ {};

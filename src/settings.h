@@ -61,8 +61,12 @@
 #define BUTTON_PROBE_LOG            debug   // log level for button probe events
 #define BUTTON_PROBE_MAX_WAIT        7500    // hard ceiling, under mp2667 8s limit
 
-//==============================================================================
-//  wake info settings
+//==============================================================================//  uptime probe settings
+//------------------------------------------------------------------------------
+#define UPTIME_PROBE_LOG            debug   // log level for uptime probe events
+#define UPTIME_PROBE_DURATION_MS    2000    // uptime tracking window after release
+
+//==============================================================================//  wake info settings
 //------------------------------------------------------------------------------
 #define WAKE_INFO_LOG           none        // log level for wake button events
 #define WAKE_INFO_KEEP_ALIVE_MS 1500        // keep rtc uptime fresh after release

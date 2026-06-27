@@ -6,9 +6,14 @@
 
 #include <variant>
 
+#include "settings.h"
 #include "app_run.h"
 #include "hotspot_run.h"
 #include "boot/request.h"
+
+#include "lite/sys/uart.h"
+#include "lite/io/serial_out.h"
+#include "lite/io/log.h"
 
 //=============================================================================
 class RunHost final {
@@ -24,11 +29,11 @@ public:
 
         switch (mode) {
             case boot::Mode::hotspot:
-                run_.emplace<HotspotRun>();
+                run_.emplace<HotspotRun>(uart_, serial_out_);
                 return;
 
             default:
-                run_.emplace<AppRun>();
+                run_.emplace<AppRun>(uart_, serial_out_);
                 return;
         }
     }
@@ -49,6 +54,17 @@ private:
     };
 
     using Run = std::variant<NoRun, AppRun, HotspotRun>;
+
+    using AppLogger = lite::CustomLogger<
+        LOG_ANSI_COLOR,
+        LOG_TIMESTAMP,
+        LOG_LEVEL_PREFIX
+    >;
+
+    lite::Uart          uart_       {MONITOR_SPEED};
+    lite::SerialOut     serial_out_ {uart_, "\n-----\n"};
+    lite::StdOut        std_out_    {serial_out_};
+    AppLogger           logger_     {serial_out_};
 
     Run run_ {};
 

@@ -15,7 +15,7 @@
 
 #include "lite/cli/cmd.h"
 #include "lite/cli/console.h"
-#include "lite/io/serial_out.h"
+#include "lite/sys/uart.h"
 #include "lite/io/log.h"
 #include "lite/sys/clock.h"
 #include "lite/core/compile_time.h"
@@ -59,8 +59,10 @@ private:
 
 //------------------------------------------------------------------------------
 public:
-    explicit RuntimeCore(EventBus& event_bus)
+    explicit RuntimeCore(EventBus& event_bus, lite::Uart& uart, lite::Out& out)
         : event_bus_(event_bus)
+        , uart_(uart)
+        , out_(out)
     {
         if (!power_) {
             LOG_ERROR("power not available: %s", power_.status().str());
@@ -120,12 +122,6 @@ public:
 
 //------------------------------------------------------------------------------
 private:
-    using AppLogger = lite::CustomLogger<
-        LOG_ANSI_COLOR,
-        LOG_TIMESTAMP,
-        LOG_LEVEL_PREFIX
-    >;
-
     // boot phase profiling: each line's log timestamp prefix shows how long
     // the preceding construction phase took; enable via RUNTIME_LOG=trace
     struct TimeMark {
@@ -137,17 +133,13 @@ private:
     TimerOffsets        timer_offsets_{};
 
     EventBus&           event_bus_;
+    lite::Uart&         uart_;
+    lite::Out&          out_;
+
     event::Queue        event_queue_ {event_bus_};
 
-    lite::Uart          uart_       {MONITOR_SPEED};
-    lite::SerialOut     serial_out_ {uart_, "\n-----\n"};
-    lite::StdOut        std_out_    {serial_out_};
-    AppLogger           logger_     {serial_out_};
-
-    TimeMark            mark_log_   {"log ready"};
-
     lite::CmdShell      shell_      {};
-    lite::Console       console_    {shell_, serial_out_};
+    lite::Console       console_    {shell_, out_};
 
     event::Logger       event_logger_{event_bus_};
 

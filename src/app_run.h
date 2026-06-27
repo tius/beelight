@@ -33,7 +33,9 @@ namespace cfg = lite::config;
 class AppRun {
 //------------------------------------------------------------------------------
 public:
-    AppRun() {
+    AppRun(lite::Uart& uart, lite::Out& out)
+        : core_(event_bus_, uart, out)
+    {
         update_boot_count();
         load_config();
 
@@ -69,7 +71,7 @@ private:
     WakeMorse           wake_morse_ {rtc::wake_morse(), event_bus_};
     WakeInfo<WakeMorse> wake_info_  {rtc::wake_uptime(), wake_morse_};
 
-    RuntimeCore         core_       {event_bus_};
+    RuntimeCore         core_;
     event::Hook         boot_hook_  {event_bus_, METHOD_THIS(on_event)};
 
     // application config fields, registered for cli (set app ...)

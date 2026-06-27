@@ -29,7 +29,9 @@ using u8 = lite::u8;
 class HotspotRun final {
 //-----------------------------------------------------------------------------
 public:
-    HotspotRun() {
+    HotspotRun(lite::Uart& uart, lite::Out& out)
+        : core_(event_bus_, uart, out)
+    {
         core_.ready();
 
         setup_ssid();
@@ -59,7 +61,7 @@ private:
     };
 
     event::Bus          event_bus_      {};
-    RuntimeCore         core_           {event_bus_};
+    RuntimeCore         core_;
     lite::esp8266::Hotspot hotspot_     {};
     
     char            ssid_[SSID_SIZE]    {};
